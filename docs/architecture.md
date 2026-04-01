@@ -197,6 +197,8 @@ lib/
 ├── contracts/          # Abstract interfaces — source of truth for every
 │                       # service, repository, and platform capability.
 │                       # All other layers depend on these, never the reverse.
+│                       # Includes CallTemplateContract for region+platform
+│                       # call screen template selection.
 │
 ├── models/             # Data classes and enums: Scenario, CallStage,
 │                       # SessionStatus, etc.
@@ -227,6 +229,9 @@ lib/
 │
 ├── widgets/            # Reusable UI components: avatar display, call timer,
 │                       # waveform visualizer, etc. Stateless where possible.
+│   └── call_templates/ # Region+platform call screen templates:
+│                       # wechat, line, whatsapp, ios_native, android_native.
+│                       # All implement same CallTemplateWidget interface.
 │
 ├── blocs/              # Bloc / Cubit classes + Events + States.
 │                       # Orchestrate user interaction → service calls → state.

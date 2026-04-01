@@ -1,0 +1,20 @@
+{
+  "homeSubtitle": "隨時為你",
+  "settings": "設定",
+  "scenarioSelector": "選擇情境",
+  "scenarioPresence": "陪伴掩護",
+  "scenarioSocialPull": "柔性牽引",
+  "scenarioExitPressure": "快速脫身",
+  "incomingCall": "來電",
+  "accept": "接聽",
+  "decline": "拒絕",
+  "audioLanguageSectionTitle": "音訊語言",
+  "audioLanguageSectionSubtitle": "請先下載語言包，確保需要時可直接離線播放支援音訊。",
+  "audioLanguageReady": "已就緒",
+  "audioLanguageNotDownloaded": "需要下載",
+  "audioLanguageDownloading": "下載中...",
+  "audioLanguageFailed": "下載失敗",
+  "audioLanguageDownload": "下載",
+  "audioLanguageSelected": "已選擇",
+  "audioLanguageFallbackHint": "若所選語言尚未完成離線準備，播放會依序回退到本機可用的中文，再到英文。"
+}

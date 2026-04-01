@@ -1,0 +1,105 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: prod
+        type: choice
+        options:
+          - prod
+
+concurrency:
+  group: deploy-prod-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-prod:
+    name: Deploy Android Prod
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      )
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: stable
+          cache: true
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Install Fastlane
+        run: gem install fastlane
+      - run: flutter pub get
+      - name: Compute build number
+        shell: bash
+        run: echo "BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+      - name: Create prod env file
+        shell: bash
+        run: |
+          mkdir -p env
+          cat > env/prod.json <<EOF
+          {
+            "APP_ENV": "prod"
+          }
+          EOF
+      - name: Configure release signing
+        shell: bash
+        run: |
+          cat > android/key.properties <<EOF
+          prodKeyAlias=${{ secrets.PROD_KEY_ALIAS }}
+          prodKeyPassword=${{ secrets.PROD_KEY_PASSWORD }}
+          prodStorePassword=${{ secrets.PROD_STORE_PASSWORD }}
+          EOF
+          echo "${{ secrets.PROD_KEYSTORE_BASE64 }}" | base64 --decode > android/app/prod_keystore.jks
+      - name: Prepare Google Play service account
+        shell: bash
+        run: |
+          mkdir -p config
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" | base64 --decode > config/google_play_key.json
+      - name: Build signed prod AAB
+        run: >
+          flutter build appbundle --release
+          --flavor=prod
+          --target=lib/main.dart
+          --dart-define-from-file=env/prod.json
+          --build-number=$BUILD_NUMBER
+      - name: Upload prod AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: with-you-prod-release-aab
+          path: build/app/outputs/bundle/prodRelease/app-prod-release.aab
+      - name: Upload to Google Play internal
+        working-directory: android
+        run: fastlane android deploy_internal
+        env:
+          ANDROID_AAB_PATH: ${{ github.workspace }}/build/app/outputs/bundle/prodRelease/app-prod-release.aab
+          ANDROID_PACKAGE_NAME: com.makinglifeeasie.withyou
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH: ${{ github.workspace }}/config/google_play_key.json
+          GOOGLE_PLAY_TRACK: internal
+          FASTLANE_SKIP_CONFIRMATIONS: true

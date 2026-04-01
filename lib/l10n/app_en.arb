@@ -1,0 +1,20 @@
+{
+  "homeSubtitle": "Always with you",
+  "settings": "Settings",
+  "scenarioSelector": "Select Scenario",
+  "scenarioPresence": "Presence",
+  "scenarioSocialPull": "Social Pull",
+  "scenarioExitPressure": "Exit Pressure",
+  "incomingCall": "Incoming call",
+  "accept": "Accept",
+  "decline": "Decline",
+  "audioLanguageSectionTitle": "Audio language",
+  "audioLanguageSectionSubtitle": "Download a language pack before you need it so support audio works offline.",
+  "audioLanguageReady": "Ready offline",
+  "audioLanguageNotDownloaded": "Download required",
+  "audioLanguageDownloading": "Downloading...",
+  "audioLanguageFailed": "Download failed",
+  "audioLanguageDownload": "Download",
+  "audioLanguageSelected": "Selected",
+  "audioLanguageFallbackHint": "If the selected language is not ready offline, playback falls back to available local Chinese, then English."
+}

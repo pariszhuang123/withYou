@@ -1,56 +1,85 @@
 # Notification Contract
 
 ## Purpose
-Schedules and displays local notifications for Stage 2 and Stage 3 follow-up calls. Notifications must look like incoming calls. This is the contract doc for `lib/contracts/notification_contract.dart`.
+
+Schedules follow-up call notifications for scenarios that define more than one stage. Handles notification callbacks when tapped or missed. Contract doc for `lib/contracts/notification_contract.dart`.
 
 ## Contract Interface
+
 ```dart
 abstract class NotificationContract {
+  Future<bool> initialize();
+
   Future<void> scheduleFollowUp({
-    required String sessionId,
+    required Scenario scenario,
     required int stage,
-    required Duration baseDelay,
+    required Duration delay,
     required String callerName,
   });
-  Future<void> cancelAll(String sessionId);
+
+  Future<void> cancelAll();
+
+  Stream<NotificationEvent> get eventStream;
+}
+
+class NotificationEvent {
+  final Scenario scenario;
+  final int stage;
+  final NotificationAction action;
+}
+
+enum NotificationAction {
+  tapped,
+  missed,
 }
 ```
 
-## Notification Appearance
-| Field | Value |
-|-------|-------|
-| Title | "{callerName} 来电" (e.g. "小陈 来电" or "阿杰 来电") |
-| Body | "点击接听" |
-| Sound | Default ringtone or custom ringtone asset |
-| Priority | High / Max (must interrupt) |
-| Channel (Android) | "incoming_call" with high importance |
+## Scheduling Rules
 
-## Timing
-| Stage | Base Delay | Randomness |
-|-------|------------|------------|
-| 2 | 4–6 minutes | ± 30% |
-| 3 | 6–10 minutes | ± 30% |
+- `presence` never schedules follow-up notifications
+- `socialPull` schedules Stage 2 and Stage 3
+- `exitPressure` schedules Stage 2 and Stage 3
+- follow-up delay begins when the prior stage resolves
+- "resolves" means accepted audio finished, decline tapped, or missed timeout expired
 
-Randomness formula: `actualDelay = baseDelay * (1 + random(-0.3, 0.3))`
+## Timing Windows
 
-## Tap Behavior
-1. User sees notification
-2. User taps notification
-3. If device locked → user unlocks (Face ID / passcode / PIN)
-4. App opens directly into fake call UI (ringing state)
+| Scenario | Stage | Delay Window |
+|----------|-------|--------------|
+| `socialPull` | 2 | 2 to 4 minutes after Stage 1 resolves |
+| `socialPull` | 3 | 4 to 8 minutes after Stage 2 resolves |
+| `exitPressure` | 2 | 45 to 90 seconds after Stage 1 resolves |
+| `exitPressure` | 3 | 90 to 180 seconds after Stage 2 resolves |
 
-## Platform Differences
-| Platform | Behavior |
-|----------|----------|
-| Android | Full-screen intent for call-like interruption. Shows over lock screen. |
-| iOS | Standard notification. User must tap → unlock → app opens → call UI shown. Cannot auto-launch call screen. |
+The selected delay must be randomized once within the allowed window.
+
+## Notification Payload
+
+Payload must carry enough state to reconstruct the ringing screen after cold start:
+
+```dart
+{
+  'scenario': 'socialPull',
+  'stage': 2,
+}
+```
+
+## Missed Detection
+
+- If a notification is not tapped within 2 minutes, emit `missed`
+- A missed stage behaves the same as a declined stage
+- If another stage exists for the scenario, its timer starts from the missed timeout
 
 ## Cancel Behavior
-- `cancelAll(sessionId)` removes all pending notifications for that session
-- Called when: user declines, flow cancelled, new flow started
 
-## Implementation File
+- `cancelAll()` removes pending follow-up notifications
+- Called when the final stage resolves
+- Not called on non-final declines or misses
+
+## Implementation
+
 `lib/platform/notification_service.dart`
 
-## Test File
+## Tests
+
 `test/integration/notification_integration_test.dart`

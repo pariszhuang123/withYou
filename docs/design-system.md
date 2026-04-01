@@ -1,189 +1,177 @@
 # Design System
 
-## Foundation: Material 3 (Material You)
+## Purpose
 
-### Why Material 3
-- Native Flutter support: `useMaterial3: true` — zero extra dependencies
-- Adaptive across Android and iOS
-- Built-in dark mode (critical — many scenarios happen at night)
-- Dynamic color on Android 12+
-- Accessible by default (contrast ratios, touch target sizes)
+This design system is a safety contract, not a mood board.
 
-## Theme Configuration
+The UI must remain legible, tappable, and predictable in low light, under time
+pressure, and at large text scales. Any visual choice that conflicts with
+clarity, accessibility, or behavioral honesty loses.
 
-### Color Palette
-```dart
-// lib/theme/app_theme.dart
+Material 3 remains the base system. Custom tokens and call-template specs are
+the source of truth for app-specific behavior.
 
-// App palette — calm, trustworthy
-static const primaryColor = Color(0xFF2D5F7C);       // Muted teal-blue
-static const onPrimaryColor = Color(0xFFFFFFFF);
-static const secondaryColor = Color(0xFF5C8A9E);      // Lighter teal
-static const surfaceColor = Color(0xFFF5F5F5);        // Light mode background
-static const darkSurfaceColor = Color(0xFF121212);     // Dark mode background
+## Structure
 
-// Call screen palette — must mimic native phone call UI
-static const callBackground = Color(0xFF1A1A1A);      // Dark, full-screen
-static const callAccept = Color(0xFF4CAF50);           // Green — accept
-static const callDecline = Color(0xFFF44336);          // Red — decline
-static const callTextPrimary = Color(0xFFFFFFFF);      // Caller name
-static const callTextSecondary = Color(0xFFB0B0B0);    // "Incoming call..." label
-```
+The design system is implemented in typed primitives under `lib/theme/`.
+
+| Layer | Responsibility |
+|------|----------------|
+| `AppTheme` | Builds explicit light and dark `ThemeData` |
+| `ThemeExtension` tokens | Typed access to semantic colors, spacing, sizes, motion, accessibility, and call theme values |
+| `CallTemplateContract` | Resolves locale + platform into a call template spec |
+| `CallTemplateSpec` | Declares layout + palette + behavior flags for a template |
+
+Do not use string-key maps for tokens. Do not hardcode spacing, colors, or hit
+targets in widgets.
+
+## Core Tokens
+
+### Semantic color tokens
+
+Use semantic intent, not direct hex values, in widget code.
+
+| Token | Purpose |
+|------|---------|
+| `safeAction` | Accept / continue / confirm actions |
+| `dangerAction` | Decline / end / destructive actions |
+| `surfacePrimary` | App screen background |
+| `surfaceSecondary` | Cards, sheets, grouped content |
+| `surfaceCritical` | High-attention but non-destructive support surfaces |
+| `textPrimary` | Primary readable copy |
+| `textSecondary` | Supporting copy |
+| `borderSubtle` | Non-dominant separators and outlines |
+| `focusRing` | Keyboard and accessibility focus treatment |
+
+### Spacing tokens
+
+Spacing follows an 8dp grid for all major layout decisions.
+
+| Token | Value |
+|------|-------|
+| `xSmall` | 4 |
+| `small` | 8 |
+| `medium` | 16 |
+| `large` | 24 |
+| `xLarge` | 32 |
+
+### Component size tokens
+
+| Token | Value | Requirement |
+|------|-------|-------------|
+| `homeTriggerSize` | 64dp | Primary home action |
+| `callActionSize` | 72dp | Call accept / decline / end actions |
+| `settingsTileMinHeight` | 56dp | Accessible settings rows |
+| `cornerRadius` | 16dp | Standard action/input radius |
+| `cardRadius` | 20dp | Elevated grouped content |
+
+### Motion tokens
+
+| Token | Value |
+|------|-------|
+| `avatarPulse` | 1500ms |
+| `screenEntry` | 300ms |
+| `actionFeedback` | 150ms |
+| `stageTransition` | 200ms |
+
+Motion must degrade safely. If platform accessibility settings request reduced
+motion, non-essential animation should collapse to `Duration.zero` or a minimal
+fade.
+
+### Accessibility tokens
+
+| Token | Value |
+|------|-------|
+| `minContrastRatio` | 4.5 |
+| `minTouchTarget` | 48dp |
+| `largeTouchTarget` | 72dp |
+| `maxSupportedTextScale` | 2.0 |
+| `reduceMotionDuration` | 0ms |
+
+## Theme Rules
+
+### Light and dark mode
+
+- Home and settings surfaces follow the system light/dark theme.
+- Call surfaces use a dedicated dark-biased call theme, even when the rest of
+  the app is light.
+- `ThemeData` must explicitly define `ColorScheme`, `TextTheme`, button themes,
+  input themes, icon theme, list tile theme, and focus treatment. Do not rely
+  on Flutter defaults for critical text/background combinations.
 
 ### Typography
-| Context | Style | Size | Weight |
-|---------|-------|------|--------|
-| Home — main button label | `headlineMedium` | 24sp | Medium |
-| Home — subtitle | `bodyLarge` | 16sp | Regular |
-| Call — caller name | `headlineLarge` | 32sp | Bold |
-| Call — "Incoming call" label | `bodyMedium` | 14sp | Regular |
-| Settings — option label | `bodyLarge` | 16sp | Regular |
-| Settings — section header | `labelLarge` | 14sp | Medium |
 
-### Spacing
-- Grid system: 8dp increments (Material standard)
-- Screen padding: 24dp horizontal, 16dp vertical
-- Component spacing: 16dp between major elements
+| Context | Style | Requirement |
+|------|-------|-------------|
+| Main heading | `headlineMedium` | 24sp, semibold |
+| Call identity | `headlineLarge` | 32sp, bold |
+| Body copy | `bodyLarge` | 16sp, regular |
+| Supporting copy | `bodyMedium` | 14sp, regular |
+| Action labels | `labelLarge` | 14sp, semibold |
 
-### Touch Targets
-| Element | Minimum Size | Notes |
-|---------|-------------|-------|
-| Home — start button | 64×64dp | Primary action, must be easy to tap |
-| Call — accept/decline | 72×72dp | Must be tappable under stress |
-| Settings — list items | 48dp height | Material standard |
+All text must remain readable up to `TextScaler.linear(2.0)` without clipped
+critical actions or hidden status.
 
-## Screen Specifications
+## Call Template Rules
 
-### Home Screen
-```
-┌──────────────────────────────┐
-│  [⚙]         [接送催促 ▼]    │  ← Settings icon left, scenario selector right
-│                              │
-│                              │
-│                              │
-│                              │
-│         ┌──────────┐         │
-│         │          │         │
-│         │   LOGO   │         │  ← App logo as button, large, tappable
-│         │          │         │
-│         └──────────┘         │
-│                              │
-│         随时为你              │  ← bodyMedium, muted, centered
-│                              │
-│                              │
-│                              │
-└──────────────────────────────┘
-```
-- **Logo is the sole trigger** — no text button label. Tap logo → call starts.
-- Scenario selector lives in the top bar, minimal footprint
-- Subtitle "随时为你" (always with you) is decorative only, not a button
-- Background: `surfaceColor` (light) or `darkSurfaceColor` (dark)
-- Button: elevated, circular or rounded-square, with gentle shadow
-- Maximum whitespace — screen should feel calm and empty
-- If someone glances at the phone, it looks like a simple, unremarkable app
-- Trigger time target: < 3 seconds from tap to call screen
+Call templates are style variants, not behavior variants.
 
-### Call Screen (Critical — must look real)
-```
-┌──────────────────────────────┐
-│                              │
-│         ┌────────┐           │
-│         │ AVATAR │           │  ← Circular, 96dp
-│         └────────┘           │
-│                              │
-│           小陈                │  ← headlineLarge, white, centered
-│       Incoming call...       │  ← bodyMedium, gray, centered
-│                              │
-│                              │
-│                              │
-│    🔴 Decline    Accept 🟢   │  ← 72dp circles, bottom third
-│                              │
-└──────────────────────────────┘
-```
-- Background: `callBackground` (solid dark)
-- Status bar: HIDDEN during call
-- No app branding visible
-- Accept button: green circle with phone icon
-- Decline button: red circle with phone-down icon
-- During "in call" state: replace buttons with a timer and "End Call" button
-- Subtle pulse animation on avatar while ringing
+The following are invariant across all templates:
 
-### Settings Screen
-- Standard Material 3 list with sections
-- Each option uses `ListTile` with trailing dropdown or radio
-- Sections: Scenario
-- Back navigation to Home
+- Only `accept`, `decline`, and `end` are actionable.
+- No fake mute, keypad, speaker, add-call, or message controls may be
+  interactive.
+- Display-only chrome is allowed only if it is excluded from semantics and
+  cannot receive focus.
+- Caller identity, timer, and call state semantics must remain consistent.
+- Accept uses the semantic safe-action color family.
+- Decline and end use the semantic danger-action color family.
 
-## Dark Mode
-- Mandatory support — many use cases happen at night
-- Home screen follows system theme
-- Call screen is ALWAYS dark (mimics native call UI)
+### Template resolution
 
-## Animations
-| Element | Animation | Duration |
-|---------|-----------|----------|
-| Avatar pulse (ringing) | Scale 1.0 → 1.05 → 1.0 | 1.5s, repeat |
-| Call screen entry | Slide up + fade in | 300ms |
-| Accept/decline tap | Ripple + scale down | 150ms |
-| Stage transition | Cross-fade | 200ms |
+`CallTemplateContract.resolve(Locale locale, TargetPlatform platform)` returns a
+typed `CallTemplateSpec`.
 
-## Accessibility
-- All interactive elements have semantic labels
-- Minimum contrast ratio: 4.5:1 (WCAG AA)
-- Support for system font scaling
-- Call buttons large enough for motor impairment (72dp minimum)
+Resolution priority:
 
-## Localization (l10n)
+1. `countryCode`
+2. `languageCode`
+3. platform fallback
 
-UI strings follow the **device system locale** via Flutter's built-in l10n:
+Current mapping:
 
-| Aspect | Rule |
-|--------|------|
-| UI strings | Localized via ARB files (`lib/l10n/app_en.arb`, `app_zh.arb`) |
-| System locale detection | `Platform.localeName` / `Localizations.localeOf(context)` |
-| Fallback | English if locale not supported |
-| Audio content | Chinese only (v1) — NOT localized |
-| Scenario names | Localized (e.g. "接送催促" in zh, "Pickup Expectation" in en) |
-| Caller names | Always Chinese (part of audio content, not UI) |
-| No manual language selector | System locale only — zero user configuration |
+| Locale / Platform | Template |
+|------|----------|
+| `zh-CN` or bare `zh` | `wechatStyle` |
+| `zh-TW` | `lineStyle` |
+| `zh-HK` | `whatsappStyle` |
+| `ja` | `lineStyle` |
+| iOS / macOS fallback | `iosNative` |
+| Android and all other fallback | `androidNative` |
 
-### Localized Strings (v1)
+Template choice may support more locales than app l10n. This affects visual
+layout selection only; it does not imply additional translated UI strings.
 
-| Key | Chinese (zh) | English (en) |
-|-----|-------------|-------------|
-| `homeSubtitle` | 随时为你 | Always with you |
-| `scenarioPickup` | 接送催促 | Pickup Expectation |
-| `scenarioSafety` | 关心确认 | Safety Check |
-| `scenarioCasual` | 轻松脱身 | Casual Exit |
-| `scenarioUrgent` | 稍微紧急 | Urgent Pull-away |
-| `callIncoming` | 来电 | Incoming call |
-| `callAccept` | 接听 | Accept |
-| `callDecline` | 拒绝 | Decline |
-| `callEnd` | 挂断 | End Call |
-| `settings` | 设置 | Settings |
-| `paywallTitle` | 随时陪伴你 | Keep this with you |
-| `paywallSubtitle` | 一次购买，永久使用 | One-time unlock. Works offline. |
-| `paywallButton` | 解锁 WithYou | Unlock WithYou |
+## Accessibility Acceptance Criteria
 
-### MaterialApp Configuration
+The design system is not valid unless the following are testable and passing:
 
-```dart
-MaterialApp(
-  // l10n
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  // Use device system locale — no manual override
-)
-```
+- All required foreground/background pairs meet WCAG AA contrast.
+- Home, settings, and call actions meet tokenized minimum target sizes.
+- Critical controls expose clear semantics labels and button roles.
+- Display-only call chrome is absent from semantics.
+- Theme surfaces and text pairings are correct in both light and dark mode.
+- Large text scales do not produce overflow for critical actions or status copy.
+- Reduced-motion behavior preserves state clarity.
 
-## Implementation
-Theme defined in `lib/theme/app_theme.dart`. Applied in `MaterialApp` in `main.dart`:
-```dart
-MaterialApp(
-  theme: AppTheme.light(),
-  darkTheme: AppTheme.dark(),
-  themeMode: ThemeMode.system,
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-)
-```
+## Testing Expectations
+
+At minimum:
+
+- Unit tests for token integrity and semantic token mapping
+- Unit tests for call-template resolution and fallback behavior
+- Widget tests for hit targets, semantics, text scaling, and theme rendering
+- Contrast-ratio assertions for required color pairs
+
+If a design-system change modifies a token, template mapping, or accessibility
+rule, tests must change in the same commit.

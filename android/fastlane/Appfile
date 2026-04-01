@@ -1,0 +1,3 @@
+package_name(ENV.fetch("ANDROID_PACKAGE_NAME", "com.makinglifeeasie.withyou"))
+
+json_key_file(ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH"]) if ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH"]

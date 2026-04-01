@@ -20,38 +20,27 @@ WithYou is designed for those moments.
 
 ## 🎯 What It Does
 
-Tap **"Call me now"**:
+With one tap:
 
 1. A realistic incoming call appears
-2. A natural Chinese voice plays **through the speaker** (so others hear it)
-3. Follow-up calls arrive automatically as notifications over time
-4. It feels like someone is waiting for you
+2. A natural voice plays **through the speaker** (so others hear it)
+3. Follow-up calls happen automatically — even if declined
+4. It feels like someone is persistently trying to reach you
 
 No setup. No login. No internet needed.
-
-### 📋 v1 Scenarios
-
-| Scenario | Chinese Name | Description |
-|----------|-------------|-------------|
-| Pickup Expectation | 接送催促 | Someone is downstairs waiting to pick you up |
-| Safety Check | 关心确认 | Someone checking if you're okay / where you are |
-| Casual Exit | 轻松脱身 | A casual reason to step away from the situation |
-| Urgent Pull-away | 稍微紧急 | Something mildly urgent that requires you to leave |
-
-Each scenario has a fixed caller identity (e.g. 小陈, 阿杰) — neutral names, not relationship titles.
 
 ---
 
 ## 🔑 Core Features
 
-- 📞 One-tap call simulation — "Call me now" button
+- 📞 One-tap call simulation (logo = trigger)
 - 🔊 Speaker-first audio (designed to be overheard)
-- 🎧 Pre-recorded natural voice scripts (Chinese only for v1)
-- 🔁 3-stage call flow (initial + 2 follow-ups via notifications)
-- 🎭 4 scenarios with fixed caller identities (小陈, 阿杰, etc.)
-- 📴 Fully offline
-- 🔒 No data collection
-- 💾 Audio budget: ≤5MB total
+- 🔁 3-stage call flow — all 3 calls fire regardless of accept/decline
+- 🎧 Pre-recorded natural Chinese voice scripts
+- 📱 Platform-native call UI (iOS-style on iPhone, Android-style on Android)
+- 🌏 UI follows device language (中文 / English)
+- 📴 Fully offline (audio bundled, no internet)
+- 🔒 No data stored — no session logs, no call history
 
 ---
 
@@ -62,7 +51,8 @@ Each scenario has a fixed caller identity (e.g. 小陈, 阿杰) — neutral name
 | Fast | < 3 seconds to first call screen |
 | Calm | No alarms, no panic |
 | Believable | Passes the "overheard by a stranger" test |
-| Private | Nothing leaves the device |
+| Private | Nothing stored, nothing to find |
+| Persistent | All 3 calls fire even if declined |
 | Reliable | People depend on this — zero flaky behavior |
 
 ---
@@ -72,24 +62,24 @@ Each scenario has a fixed caller identity (e.g. 小陈, 阿杰) — neutral name
 Contract-based, dependency-injected, layer-separated:
 
 ```
-UI (Screens) → Bloc → Services (contracts) → Repository (Drift) + Platform
+UI (Screens) → Bloc → Services (contracts) → Platform (audio, notifications)
 ```
 
-Every layer communicates through abstract contracts. See full details in [`docs/architecture.md`](docs/architecture.md).
+Every layer communicates through abstract contracts. See [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
 ## 📁 Documentation
 
-All detailed specifications live in `docs/`. AI agents and contributors should read the relevant doc before implementing.
+All detailed specs live in `docs/`. AI agents and contributors must read the relevant doc before implementing.
 
 | Doc | Purpose |
 |-----|---------|
 | [Architecture](docs/architecture.md) | Layers, DI, dependencies, project structure |
-| [Design System](docs/design-system.md) | Material 3 theme, call screen UI, accessibility |
-| [Data Model](docs/data-model.md) | SQLite/Drift schema |
-| [Content Model](docs/content-model.md) | Scenario × caller mapping |
-| [Testing Strategy](docs/testing.md) | Test plan, 31 critical test cases, mocks |
+| [Design System](docs/design-system.md) | Material 3 theme, call screen templates, l10n |
+| [Data Model](docs/data-model.md) | App state persistence (minimal) |
+| [Content Model](docs/content-model.md) | Scenario × caller mapping, audio assets |
+| [Testing Strategy](docs/testing.md) | Test plan, critical test cases, mocks |
 | [CI/CD](docs/ci-cd.md) | GitHub Actions pipeline |
 
 ### Contracts
@@ -98,25 +88,33 @@ All detailed specifications live in `docs/`. AI agents and contributors should r
 |----------|---------|
 | [Call Flow](docs/contracts/call-flow.md) | 3-stage call orchestration — the critical path |
 | [Audio Playback](docs/contracts/audio-playback.md) | Speaker-first audio rules |
-| [Notification](docs/contracts/notification.md) | Follow-up call scheduling |
-| [Repository](docs/contracts/call-session-repository.md) | Session + event persistence |
+| [Notification](docs/contracts/notification.md) | Follow-up call scheduling + resume |
+| [App State](docs/contracts/app-state.md) | Scenario preference + purchase state |
 | [Content Resolver](docs/contracts/content-resolver.md) | Scenario-based asset resolution |
-| [Paywall](docs/contracts/paywall.md) | Purchase gating rules |
+| [Call Template](docs/contracts/call-template.md) | Platform-specific call UI templates |
+| [Paywall](docs/contracts/paywall.md) | Purchase gating with emergency bypass |
 
 ---
 
-## 💰 Monetization
+## 💰 Monetization — Emergency Bypass Model
 
-- First complete call flow is **free**
-- One-time unlock: **$3.99** (unlimited use, all scenarios)
-- No subscriptions
+| Use | Behavior |
+|-----|----------|
+| 1st flow | **Free** — full 3-stage experience |
+| 2nd attempt | Paywall shown with **"紧急使用"** (Emergency) button |
+| Emergency tap | Immediately triggers call — zero friction |
+| After emergency | Paywall returns: "We're glad we could help. Unlock to have it ready anytime." |
+| 3rd+ attempt | Must purchase ($3.99 one-time) |
+| Emergency reset | Resets every 30 days — always one available |
+| During active flow | **NEVER** show paywall |
 
 ---
 
 ## 🔐 Privacy
 
 - No login, no tracking, no analytics
-- All data stored locally
+- **No session history stored** — no call logs, nothing to find
+- Only stored data: scenario preference + purchase state
 - No telephony spoofing
 - Fully offline
 

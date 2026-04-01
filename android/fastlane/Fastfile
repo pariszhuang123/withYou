@@ -1,0 +1,21 @@
+default_platform(:android)
+
+platform :android do
+  desc "Upload the built production AAB to Google Play internal track"
+  lane :deploy_internal do
+    aab_path = ENV.fetch("ANDROID_AAB_PATH")
+    track = ENV.fetch("GOOGLE_PLAY_TRACK", "internal")
+
+    UI.user_error!("AAB not found at #{aab_path}") unless File.exist?(aab_path)
+
+    upload_to_play_store(
+      track: track,
+      aab: aab_path,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+  end
+end

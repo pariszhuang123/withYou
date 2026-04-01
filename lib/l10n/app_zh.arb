@@ -1,0 +1,20 @@
+{
+  "homeSubtitle": "随时为你",
+  "settings": "设置",
+  "scenarioSelector": "选择场景",
+  "scenarioPresence": "陪伴掩护",
+  "scenarioSocialPull": "柔性牵引",
+  "scenarioExitPressure": "快速脱身",
+  "incomingCall": "来电",
+  "accept": "接听",
+  "decline": "拒绝",
+  "audioLanguageSectionTitle": "音频语言",
+  "audioLanguageSectionSubtitle": "请在需要之前先下载语言包，确保离线也能播放支援音频。",
+  "audioLanguageReady": "已就绪",
+  "audioLanguageNotDownloaded": "需要下载",
+  "audioLanguageDownloading": "正在下载...",
+  "audioLanguageFailed": "下载失败",
+  "audioLanguageDownload": "下载",
+  "audioLanguageSelected": "已选择",
+  "audioLanguageFallbackHint": "如果已选语言尚未离线就绪，播放会依次回退到本地可用的中文，再到英文。"
+}

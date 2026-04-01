@@ -1,60 +1,58 @@
 # Content Resolver Contract
 
 ## Purpose
-Resolves all display and playback content from the scenario. Never hardcode asset paths — always go through this contract. Contract doc for `lib/contracts/content_resolver_contract.dart`.
+
+Resolves all caller presentation and stage audio from a scenario. Never hardcode caller names, avatars, or asset paths. Contract doc for `lib/contracts/content_resolver_contract.dart`.
 
 ## Contract Interface
+
 ```dart
 abstract class ContentResolverContract {
-  CallContent resolve({
+  String resolveCallerName(Scenario scenario);
+
+  String resolveScenarioAudioPath({
     required Scenario scenario,
+    required int stage,
   });
 }
 ```
 
-## CallContent Model
+## Scenario Enum
+
 ```dart
-class CallContent {
-  final String callerName;          // Neutral name, e.g. "小陈"
-  final String avatarAssetPath;     // Generic contact avatar
-  final List<String> stageAudioPaths; // 3 paths, one per stage
+enum Scenario {
+  presence,
+  socialPull,
+  exitPressure,
 }
 ```
 
-## Resolution Rules
+## Resolution Table
 
-### Caller Names
-Each scenario has a fixed, neutral caller name. Names MUST NOT be relationship-specific (no 老公, 爸爸, etc.).
+| Scenario | Caller Name | Avatar | Valid Stages | Audio Path Pattern |
+|----------|-------------|--------|--------------|--------------------|
+| `presence` | `Xiao Chen` | `assets/avatars/default_contact.png` | 1 | `assets/audio/zh/presence/stage_1.m4a` |
+| `socialPull` | `Xiao Li` | `assets/avatars/default_contact.png` | 1, 2, 3 | `assets/audio/zh/social_pull/stage_{n}.m4a` |
+| `exitPressure` | `Xiao Zhang` | `assets/avatars/default_contact.png` | 1, 2, 3 | `assets/audio/zh/exit_pressure/stage_{n}.m4a` |
 
-| Scenario | Caller Name |
-|----------|-------------|
-| pickupExpectation | 小陈 |
-| safetyCheck | 阿杰 |
-| casualExit | 联系人 |
-| urgentPullaway | 小陈 |
+## Caller Name Rules
 
-### Avatar Path Pattern
-Generic contact image, same across all scenarios:
-
-`assets/avatars/default_contact.png`
-
-### Audio Path Pattern
-`assets/audio/zh/{scenario}/stage_{n}.m4a`
-
-Example: `assets/audio/zh/pickup_expectation/stage_1.m4a`
-
-## Enums
-```dart
-enum Scenario { pickupExpectation, safetyCheck, casualExit, urgentPullaway }
-```
+- Must use neutral, common names
+- Must not use relationship-specific labels
+- Must not use generic placeholders like "Contact"
+- Caller names are part of the simulation, not the app UI
 
 ## Rules
-- This is a **pure function** — no side effects, no I/O, no async.
-- Must return valid paths for every scenario.
-- If an asset doesn't exist at the resolved path, the caller handles the error (not this contract).
+
+- This contract is a pure function with no I/O and no async work
+- `resolveScenarioAudioPath()` must reject invalid stage numbers for the selected scenario
+- `presence` only resolves Stage 1
+- `socialPull` and `exitPressure` resolve Stages 1 to 3
 
 ## Implementation File
+
 `lib/services/content_resolver_service.dart`
 
 ## Test File
-`test/unit/services/content_resolver_service_test.dart` — must test EVERY scenario.
+
+`test/unit/services/content_resolver_service_test.dart`

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +7,21 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keyProperties = Properties()
+val keyPropertiesFile = rootProject.file("key.properties")
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.inputStream().use(keyProperties::load)
+}
+
+val prodKeystoreFile = rootProject.file("app/prod_keystore.jks")
+val hasProdSigning =
+    prodKeystoreFile.exists() &&
+        keyProperties.getProperty("prodStorePassword") != null &&
+        keyProperties.getProperty("prodKeyPassword") != null &&
+        keyProperties.getProperty("prodKeyAlias") != null
+
 android {
-    namespace = "com.example.with_you"
+    namespace = "com.makinglifeeasie.withyou"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,22 +34,55 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        if (hasProdSigning) {
+            create("prodRelease") {
+                storeFile = prodKeystoreFile
+                storePassword = keyProperties.getProperty("prodStorePassword")
+                keyAlias = keyProperties.getProperty("prodKeyAlias")
+                keyPassword = keyProperties.getProperty("prodKeyPassword")
+            }
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.with_you"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.makinglifeeasie.withyou"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "With You"
+    }
+
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appLabel"] = "With You Dev"
+            signingConfig = signingConfigs.getByName("debug")
+        }
+
+        create("prod") {
+            dimension = "environment"
+            manifestPlaceholders["appLabel"] = "With You"
+            if (hasProdSigning) {
+                signingConfig = signingConfigs.getByName("prodRelease")
+            }
+        }
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        debug {
             signingConfig = signingConfigs.getByName("debug")
+        }
+
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
