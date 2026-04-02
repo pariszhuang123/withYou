@@ -466,6 +466,16 @@ extension ThemeTokenLookup on ThemeData {
   CallThemeTokens get callTheme => extension<CallThemeTokens>()!;
 }
 
+extension AccessibleMotionContext on BuildContext {
+  Duration accessibleMotionDuration(Duration preferredDuration) {
+    final mediaQuery = MediaQuery.maybeOf(this);
+    if (mediaQuery?.disableAnimations ?? false) {
+      return Theme.of(this).accessibility.reduceMotionDuration;
+    }
+    return preferredDuration;
+  }
+}
+
 Duration? lerpDuration(Duration a, Duration b, double t) {
   return Duration(
     microseconds:

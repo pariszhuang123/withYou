@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:with_you/contracts/call_template_contract.dart';
+import 'package:with_you/contracts/call_flow_contracts.dart';
 import 'package:with_you/services/call_template_service.dart';
 
 void main() {

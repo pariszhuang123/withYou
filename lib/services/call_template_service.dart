@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../contracts/call_template_contract.dart';
+import '../contracts/call_flow_contracts.dart';
 
 class CallTemplateService implements CallTemplateContract {
   const CallTemplateService();

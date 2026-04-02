@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
-import '../contracts/audio_language_pack_manager_contract.dart';
-import '../contracts/audio_playback_contract.dart';
-import '../contracts/content_resolver_contract.dart';
-import '../contracts/fake_call_timing_contract.dart';
-import '../contracts/notification_contract.dart';
+import '../contracts/audio_contracts.dart';
+import '../contracts/call_flow_contracts.dart';
 
 class FakeCallTimingService implements FakeCallTimingContract {
   final NotificationContract notificationContract;
@@ -20,6 +17,9 @@ class FakeCallTimingService implements FakeCallTimingContract {
   Scenario? _scenario;
   FakeCallState _currentState = FakeCallState.idle;
   int _currentStage = 0;
+  int? _pendingFollowUpStage;
+  DateTime? _nextStageReadyAt;
+  int _playbackSequence = 0;
 
   Timer? _missedTimer;
 
@@ -43,11 +43,22 @@ class FakeCallTimingService implements FakeCallTimingContract {
   @override
   int get currentStage => _currentStage;
 
+  @override
+  int? get pendingFollowUpStage => _pendingFollowUpStage;
+
+  @override
+  DateTime? get nextStageReadyAt => _nextStageReadyAt;
+
   void _setState(FakeCallState state) {
     _currentState = state;
     if (!_stateController.isClosed) {
       _stateController.add(state);
     }
+  }
+
+  void _clearPendingFollowUp() {
+    _pendingFollowUpStage = null;
+    _nextStageReadyAt = null;
   }
 
   void _cancelMissedTimer() {
@@ -76,6 +87,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     _sessionId = sessionId;
     _scenario = scenario;
     _currentStage = 1;
+    _clearPendingFollowUp();
     _setState(FakeCallState.ringing);
 
     switch (track) {
@@ -105,6 +117,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     _sessionId = sessionId;
     _scenario = scenario;
     _currentStage = stage;
+    _clearPendingFollowUp();
     _setState(FakeCallState.ringing);
     _scheduleMissedTimer(sessionId, stage);
   }
@@ -119,22 +132,26 @@ class FakeCallTimingService implements FakeCallTimingContract {
 
     _cancelMissedTimer();
     _setState(FakeCallState.inCall);
+    final playbackSequence = ++_playbackSequence;
 
     final scenario = _scenario;
     if (scenario == null) {
       throw StateError('Scenario is not set');
     }
 
-    final resolvedAudio = await audioLanguagePackManagerContract.resolvePlayableAudio(
-      scenario: scenario,
-      stage: _currentStage,
-    );
+    final resolvedAudio = await audioLanguagePackManagerContract
+        .resolvePlayableAudio(scenario: scenario, stage: _currentStage);
 
     await audioPlaybackContract.playScenarioClip(
       scenario: scenario,
       stage: _currentStage,
       source: resolvedAudio.source,
     );
+
+    if (_playbackSequence != playbackSequence ||
+        _currentState != FakeCallState.inCall) {
+      return;
+    }
 
     _setState(FakeCallState.callEnded);
     await _onStageResolved();
@@ -149,6 +166,20 @@ class FakeCallTimingService implements FakeCallTimingContract {
     }
 
     _cancelMissedTimer();
+    await _onStageResolved();
+  }
+
+  @override
+  Future<void> endCurrentStage() async {
+    if (_currentState != FakeCallState.inCall) {
+      throw StateError(
+        'Cannot end unless inCall. Current state: $_currentState',
+      );
+    }
+
+    _playbackSequence++;
+    await audioPlaybackContract.stop();
+    _setState(FakeCallState.callEnded);
     await _onStageResolved();
   }
 
@@ -180,6 +211,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     }
 
     if (_currentStage >= _maxStageFor(scenario)) {
+      _clearPendingFollowUp();
       _setState(FakeCallState.completed);
       await notificationContract.cancelAll(sessionId);
       return;
@@ -191,6 +223,8 @@ class FakeCallTimingService implements FakeCallTimingContract {
       scenario: scenario,
       stage: nextStage,
     );
+    _pendingFollowUpStage = nextStage;
+    _nextStageReadyAt = DateTime.now().add(delay);
 
     await notificationContract.scheduleFollowUp(
       sessionId: sessionId,
@@ -253,6 +287,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
   @override
   Future<void> dispose() async {
     _cancelMissedTimer();
+    _clearPendingFollowUp();
     await _stateController.close();
   }
 }

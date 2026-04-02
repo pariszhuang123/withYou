@@ -1,12 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:with_you/contracts/audio_language_pack_manager_contract.dart';
-import 'package:with_you/contracts/audio_playback_contract.dart';
-import 'package:with_you/contracts/content_resolver_contract.dart';
-import 'package:with_you/contracts/fake_call_timing_contract.dart';
-import 'package:with_you/contracts/notification_contract.dart';
+import 'package:with_you/contracts/audio_contracts.dart';
+import 'package:with_you/contracts/call_flow_contracts.dart';
 import 'package:with_you/models/audio_language.dart';
 import 'package:with_you/models/playable_audio_source.dart';
 import 'package:with_you/services/fake_call_timing_service.dart';
@@ -14,6 +12,13 @@ import 'package:with_you/services/fake_call_timing_service.dart';
 class _TestNotificationContract implements NotificationContract {
   final List<_NotificationRequest> requests = [];
   bool cancelled = false;
+  final _events = StreamController<NotificationEvent>.broadcast();
+
+  @override
+  Stream<NotificationEvent> get eventStream => _events.stream;
+
+  @override
+  Future<bool> initialize() async => true;
 
   @override
   Future<void> cancelAll(String sessionId) async {
@@ -208,6 +213,8 @@ void main() {
     expect(req.stage, 2);
     expect(req.callerName, 'Xiao Li');
     expect(req.delay.inSeconds, inInclusiveRange(120, 240));
+    expect(service.pendingFollowUpStage, 2);
+    expect(service.nextStageReadyAt, isNotNull);
   });
 
   test(
@@ -253,6 +260,23 @@ void main() {
     final delay = notification.requests.single.delay;
     expect(delay.inSeconds, inInclusiveRange(45, 90));
   });
+
+  test(
+    'ending an active stage stops playback and resolves it immediately',
+    () async {
+      await service.startFlow(
+        sessionId: 's-end',
+        scenario: Scenario.exitPressure,
+      );
+
+      unawaited(service.acceptCurrentStage());
+      await Future<void>.delayed(Duration.zero);
+      await service.endCurrentStage();
+
+      expect(service.currentState, FakeCallState.awaitingNextStage);
+      expect(notification.requests.single.stage, 2);
+    },
+  );
 
   test('presence notification tap rejects invalid follow-up stages', () async {
     expect(

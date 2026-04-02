@@ -1,5 +1,5 @@
-import '../contracts/content_resolver_contract.dart';
-import '../contracts/fake_call_timing_contract.dart';
+import '../contracts/audio_contracts.dart';
+import '../contracts/call_flow_contracts.dart';
 
 class ContentResolverService implements ContentResolverContract {
   const ContentResolverService();

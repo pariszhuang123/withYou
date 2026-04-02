@@ -117,6 +117,12 @@ void main() {
 
       final Card card = tester.widget(find.byType(Card));
       expect(card.color, AppColorTokens.light.surfaceSecondary);
+      final RoundedRectangleBorder shape =
+          card.shape! as RoundedRectangleBorder;
+      expect(
+        shape.borderRadius,
+        BorderRadius.circular(AppComponentSizeTokens.base.cardRadius),
+      );
 
       final Padding padding = tester.widget(
         find.descendant(
@@ -129,6 +135,31 @@ void main() {
         ),
       );
       expect(padding.padding, EdgeInsets.all(AppSpacingTokens.base.medium));
+    });
+  });
+
+  group('ThemedSurfacePanel', () {
+    testWidgets('uses tokenized border and radius', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(
+            body: ThemedSurfacePanel(child: Text('Panel')),
+          ),
+        ),
+      );
+
+      final DecoratedBox decoratedBox = tester.widget(
+        find.byType(DecoratedBox),
+      );
+      final BoxDecoration decoration = decoratedBox.decoration as BoxDecoration;
+
+      expect(decoration.color, AppColorTokens.light.surfaceCritical);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(AppComponentSizeTokens.base.cornerRadius),
+      );
+      expect(decoration.border?.top.color, AppColorTokens.light.borderSubtle);
     });
   });
 }

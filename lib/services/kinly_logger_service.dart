@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 
-import '../contracts/kinly_logger_contract.dart';
+import '../contracts/platform_contracts.dart';
 
 class KinlyLoggerService implements KinlyLoggerContract {
   const KinlyLoggerService();

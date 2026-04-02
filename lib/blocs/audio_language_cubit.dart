@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../contracts/audio_language_pack_manager_contract.dart';
+import '../contracts/audio_contracts.dart';
 import '../models/audio_language.dart';
 
 class AudioLanguageState {

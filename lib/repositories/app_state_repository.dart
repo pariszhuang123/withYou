@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../contracts/app_state_contract.dart';
-
-typedef DirectoryProvider = Future<Directory> Function();
+import '../contracts/app_contracts.dart';
+import '../contracts/call_flow_contracts.dart';
 
 class AppStateRepository implements AppStateContract {
   AppStateRepository({required DirectoryProvider directoryProvider})
@@ -13,6 +12,8 @@ class AppStateRepository implements AppStateContract {
 
   static const String _fileName = 'app_state.json';
   static const String _selectedAudioLocaleKey = 'selectedAudioLocaleTag';
+  static const String _selectedScenarioKey = 'selectedScenario';
+  static const String _hasPremiumAccessKey = 'hasPremiumAccess';
 
   @override
   Future<String?> getSelectedAudioLocaleTag() async {
@@ -24,6 +25,41 @@ class AppStateRepository implements AppStateContract {
   Future<void> setSelectedAudioLocaleTag(String localeTag) async {
     final data = await _readState();
     data[_selectedAudioLocaleKey] = localeTag;
+    await _writeState(data);
+  }
+
+  @override
+  Future<Scenario?> getSelectedScenario() async {
+    final data = await _readState();
+    final rawScenario = data[_selectedScenarioKey];
+    if (rawScenario is! String || rawScenario.isEmpty) {
+      return null;
+    }
+
+    try {
+      return Scenario.values.byName(rawScenario);
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> setSelectedScenario(Scenario scenario) async {
+    final data = await _readState();
+    data[_selectedScenarioKey] = scenario.name;
+    await _writeState(data);
+  }
+
+  @override
+  Future<bool> hasPremiumAccess() async {
+    final data = await _readState();
+    return data[_hasPremiumAccessKey] as bool? ?? false;
+  }
+
+  @override
+  Future<void> setPremiumAccess(bool hasPremiumAccess) async {
+    final data = await _readState();
+    data[_hasPremiumAccessKey] = hasPremiumAccess;
     await _writeState(data);
   }
 

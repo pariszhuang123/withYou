@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../contracts/app_locale_resolver_contract.dart';
+import '../contracts/app_contracts.dart';
 
 class AppLocaleResolverService implements AppLocaleResolverContract {
   const AppLocaleResolverService();

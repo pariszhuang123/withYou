@@ -4,6 +4,8 @@ import '../theme/design_tokens.dart';
 
 enum ThemedButtonSize { regular, homeTrigger, callAction }
 
+enum ThemedIconButtonSize { regular, callAction }
+
 class ThemedButton extends StatelessWidget {
   const ThemedButton({
     super.key,
@@ -67,10 +69,206 @@ class ThemedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.appSpacing;
+    final sizes = theme.appSizes;
 
     return Card(
       color: theme.appColors.surfaceSecondary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(sizes.cardRadius),
+      ),
       child: Padding(padding: EdgeInsets.all(spacing.medium), child: child),
+    );
+  }
+}
+
+class ThemedSurfacePanel extends StatelessWidget {
+  const ThemedSurfacePanel({
+    super.key,
+    required this.child,
+    this.backgroundColor,
+    this.padding,
+  });
+
+  final Widget child;
+  final Color? backgroundColor;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.appSpacing;
+    final sizes = theme.appSizes;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor ?? theme.appColors.surfaceCritical,
+        borderRadius: BorderRadius.circular(sizes.cornerRadius),
+        border: Border.all(color: theme.appColors.borderSubtle),
+      ),
+      child: Padding(
+        padding: padding ?? EdgeInsets.all(spacing.medium),
+        child: child,
+      ),
+    );
+  }
+}
+
+class ThemedAvatarPlaceholder extends StatelessWidget {
+  const ThemedAvatarPlaceholder({
+    super.key,
+    required this.size,
+    required this.iconColor,
+    required this.ringColor,
+    required this.surfaceColor,
+  });
+
+  final double size;
+  final Color iconColor;
+  final Color ringColor;
+  final Color surfaceColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: ringColor, width: 3),
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.person_outline, size: size * 0.46, color: iconColor),
+    );
+  }
+}
+
+class ThemedDisplayChip extends StatelessWidget {
+  const ThemedDisplayChip({
+    super.key,
+    required this.label,
+    required this.textColor,
+  });
+
+  final String label;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      label: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(color: textColor),
+      ),
+      backgroundColor: Theme.of(context).callTheme.surface,
+      side: BorderSide(color: Theme.of(context).appColors.borderSubtle),
+    );
+  }
+}
+
+class ThemedIconButton extends StatelessWidget {
+  const ThemedIconButton({
+    super.key,
+    required this.icon,
+    required this.semanticLabel,
+    required this.onPressed,
+    this.tooltip,
+    this.size = ThemedIconButtonSize.regular,
+  });
+
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+  final ThemedIconButtonSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final targetSize = switch (size) {
+      ThemedIconButtonSize.regular => theme.accessibility.minTouchTarget,
+      ThemedIconButtonSize.callAction => theme.appSizes.callActionSize,
+    };
+
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: semanticLabel,
+      child: IconButton(
+        tooltip: tooltip ?? semanticLabel,
+        onPressed: onPressed,
+        constraints: BoxConstraints.tightFor(
+          width: targetSize,
+          height: targetSize,
+        ),
+        icon: Icon(icon),
+      ),
+    );
+  }
+}
+
+class CallActionButton extends StatelessWidget {
+  const CallActionButton({
+    super.key,
+    required this.label,
+    required this.semanticLabel,
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onPressed,
+    required this.focusOrder,
+  });
+
+  final String label;
+  final String semanticLabel;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onPressed;
+  final double focusOrder;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = Theme.of(context).appSizes.callActionSize;
+    final spacing = Theme.of(context).appSpacing;
+
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(focusOrder),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            label: semanticLabel,
+            button: true,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: EdgeInsets.zero,
+                  backgroundColor: backgroundColor,
+                  foregroundColor: foregroundColor,
+                  minimumSize: Size.square(size),
+                ),
+                onPressed: onPressed,
+                child: Icon(icon),
+              ),
+            ),
+          ),
+          SizedBox(height: spacing.small),
+          ExcludeSemantics(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).callTheme.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

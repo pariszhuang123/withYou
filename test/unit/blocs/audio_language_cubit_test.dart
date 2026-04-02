@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:with_you/blocs/audio_language_cubit.dart';
-import 'package:with_you/contracts/audio_language_pack_manager_contract.dart';
-import 'package:with_you/contracts/fake_call_timing_contract.dart';
+import 'package:with_you/contracts/audio_contracts.dart';
+import 'package:with_you/contracts/call_flow_contracts.dart';
 import 'package:with_you/models/audio_language.dart';
 import 'package:with_you/models/playable_audio_source.dart';
 

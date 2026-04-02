@@ -1,13 +1,215 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterStreamHandler, UNUserNotificationCenterDelegate {
+  private let methodChannelName = "with_you/notifications/methods"
+  private let eventChannelName = "with_you/notifications/events"
+  private let pendingEventsKey = "with_you_pending_notification_events"
+  private var eventSink: FlutterEventSink?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    UNUserNotificationCenter.current().delegate = self
+
+    if let controller = window?.rootViewController as? FlutterViewController {
+      let methodChannel = FlutterMethodChannel(
+        name: methodChannelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      methodChannel.setMethodCallHandler { [weak self] call, result in
+        self?.handleMethodCall(call, result: result)
+      }
+
+      let eventChannel = FlutterEventChannel(
+        name: eventChannelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      eventChannel.setStreamHandler(self)
+    }
+
+    reconcileMissedNotifications()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+    reconcileMissedNotifications()
+  }
+
+  private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "initialize":
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
+        granted, _ in
+        DispatchQueue.main.async {
+          self.flushPendingEvents()
+          result(granted)
+        }
+      }
+    case "scheduleFollowUp":
+      guard let arguments = call.arguments as? [String: Any],
+            let sessionId = arguments["sessionId"] as? String,
+            let scenario = arguments["scenario"] as? String,
+            let stage = arguments["stage"] as? Int,
+            let delaySeconds = arguments["delaySeconds"] as? Int,
+            let callerName = arguments["callerName"] as? String else {
+        result(
+          FlutterError(code: "bad_args", message: "Invalid notification arguments", details: nil)
+        )
+        return
+      }
+
+      let content = UNMutableNotificationContent()
+      content.title = callerName
+      content.body = "Follow-up support call"
+      content.sound = .default
+      content.userInfo = [
+        "sessionId": sessionId,
+        "scenario": scenario,
+        "stage": stage,
+        "fireAtEpochMs": Int(Date().timeIntervalSince1970 * 1000) + (delaySeconds * 1000),
+      ]
+
+      let request = UNNotificationRequest(
+        identifier: notificationIdentifier(sessionId: sessionId, stage: stage),
+        content: content,
+        trigger: UNTimeIntervalNotificationTrigger(
+          timeInterval: TimeInterval(max(delaySeconds, 1)),
+          repeats: false
+        )
+      )
+
+      UNUserNotificationCenter.current().add(request) { error in
+        DispatchQueue.main.async {
+          if let error {
+            result(
+              FlutterError(
+                code: "schedule_failed",
+                message: "Failed to schedule follow-up notification",
+                details: error.localizedDescription
+              )
+            )
+          } else {
+            result(nil)
+          }
+        }
+      }
+    case "cancelAll":
+      guard let arguments = call.arguments as? [String: Any],
+            let sessionId = arguments["sessionId"] as? String else {
+        result(
+          FlutterError(code: "bad_args", message: "Invalid cancel arguments", details: nil)
+        )
+        return
+      }
+
+      let identifiers = (1...3).map { notificationIdentifier(sessionId: sessionId, stage: $0) }
+      UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+      UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
+      result(nil)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func notificationIdentifier(sessionId: String, stage: Int) -> String {
+    return "with_you_\(sessionId)_\(stage)"
+  }
+
+  private func emitEvent(_ event: [String: Any]) {
+    if let eventSink {
+      eventSink(event)
+      return
+    }
+
+    let existing = UserDefaults.standard.array(forKey: pendingEventsKey) as? [[String: Any]] ?? []
+    UserDefaults.standard.set(existing + [event], forKey: pendingEventsKey)
+  }
+
+  private func flushPendingEvents() {
+    guard let eventSink else { return }
+    let existing = UserDefaults.standard.array(forKey: pendingEventsKey) as? [[String: Any]] ?? []
+    for event in existing {
+      eventSink(event)
+    }
+    UserDefaults.standard.removeObject(forKey: pendingEventsKey)
+  }
+
+  private func reconcileMissedNotifications() {
+    UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+      let nowEpochMs = Int(Date().timeIntervalSince1970 * 1000)
+      let stale = notifications.filter { notification in
+        guard let fireAtEpochMs = notification.request.content.userInfo["fireAtEpochMs"] as? Int else {
+          return false
+        }
+        return nowEpochMs - fireAtEpochMs >= 120_000
+      }
+
+      guard !stale.isEmpty else { return }
+
+      let identifiers = stale.map(\.request.identifier)
+      UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
+
+      DispatchQueue.main.async {
+        for notification in stale {
+          guard let sessionId = notification.request.content.userInfo["sessionId"] as? String,
+                let scenario = notification.request.content.userInfo["scenario"] as? String,
+                let stage = notification.request.content.userInfo["stage"] as? Int else {
+            continue
+          }
+
+          self.emitEvent([
+            "sessionId": sessionId,
+            "scenario": scenario,
+            "stage": stage,
+            "action": "missed",
+          ])
+        }
+      }
+    }
+  }
+
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .sound, .badge])
+  }
+
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    let userInfo = response.notification.request.content.userInfo
+    if let sessionId = userInfo["sessionId"] as? String,
+       let scenario = userInfo["scenario"] as? String,
+       let stage = userInfo["stage"] as? Int {
+      emitEvent([
+        "sessionId": sessionId,
+        "scenario": scenario,
+        "stage": stage,
+        "action": "tapped",
+      ])
+      center.removeDeliveredNotifications(withIdentifiers: [response.notification.request.identifier])
+    }
+    completionHandler()
+  }
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    eventSink = events
+    flushPendingEvents()
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    eventSink = nil
+    return nil
   }
 }
