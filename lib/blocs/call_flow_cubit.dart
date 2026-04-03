@@ -104,7 +104,7 @@ class CallFlowCubit extends Cubit<CallFlowState> {
   }) : _coordinator = coordinator,
        _appStateContract = appStateContract,
        _sceneReadinessContract = sceneReadinessContract,
-      super(CallFlowState.initial()) {
+       super(CallFlowState.initial()) {
     _stateSubscription = _coordinator.snapshotStream.listen(_handleSnapshot);
     _handleSnapshot(_coordinator.currentSnapshot);
     unawaited(_loadInitialState());
@@ -117,6 +117,8 @@ class CallFlowCubit extends Cubit<CallFlowState> {
   StreamSubscription<CallFlowSnapshot>? _stateSubscription;
   Timer? _ticker;
   DateTime? _inCallStartedAt;
+  DateTime? _foregroundSince;
+  bool _followUpAutoTriggerInFlight = false;
 
   Future<void> selectScenario(Scenario scenario) async {
     await _appStateContract.setSelectedScenario(scenario);
@@ -159,34 +161,43 @@ class CallFlowCubit extends Cubit<CallFlowState> {
     await _coordinator.triggerFollowUpStage();
   }
 
+  void setAppInForeground(bool isForeground) {
+    _foregroundSince = isForeground ? DateTime.now() : null;
+  }
+
   Future<void> _loadInitialState() async {
     final selectedScenario =
         await _appStateContract.getSelectedScenario() ?? Scenario.presence;
 
-    emit(
-      state.copyWith(
-        selectedScenario: selectedScenario,
-      ),
-    );
+    emit(state.copyWith(selectedScenario: selectedScenario));
     await refreshReadiness();
   }
 
   void _handleSnapshot(CallFlowSnapshot snapshot) {
     _syncTicker(snapshot.flowState);
+    final resetsFlowIdentity =
+        snapshot.flowState == FakeCallState.completed ||
+        snapshot.flowState == FakeCallState.idle;
 
-    emit(
-      state.copyWith(
-        activeScenario: snapshot.scenario,
-        flowState: snapshot.flowState,
-        currentStage: snapshot.currentStage,
-        callerName: snapshot.callerName,
-        sessionId: snapshot.sessionId,
-        callDuration: _currentCallDuration(snapshot.flowState),
-        followUpStage: snapshot.followUpStage,
-        followUpReadyAt: snapshot.followUpReadyAt,
-        followUpRemaining: _remainingUntil(snapshot.followUpReadyAt),
-      ),
+    final nextState = state.copyWith(
+      activeScenario: resetsFlowIdentity ? null : snapshot.scenario,
+      flowState: snapshot.flowState,
+      currentStage: resetsFlowIdentity ? 0 : snapshot.currentStage,
+      callerName: resetsFlowIdentity ? null : snapshot.callerName,
+      sessionId: resetsFlowIdentity ? null : snapshot.sessionId,
+      callDuration: _currentCallDuration(snapshot.flowState),
+      followUpStage: resetsFlowIdentity ? null : snapshot.followUpStage,
+      followUpReadyAt: resetsFlowIdentity ? null : snapshot.followUpReadyAt,
+      followUpRemaining: resetsFlowIdentity
+          ? Duration.zero
+          : _remainingUntil(snapshot.followUpReadyAt),
+      clearCallerName: resetsFlowIdentity,
+      clearSessionId: resetsFlowIdentity,
+      clearFollowUp: resetsFlowIdentity,
+      clearActiveScenario: resetsFlowIdentity,
     );
+    emit(nextState);
+    _maybeAutoTriggerFollowUp(nextState);
   }
 
   void _syncTicker(FakeCallState flowState) {
@@ -208,13 +219,38 @@ class CallFlowCubit extends Cubit<CallFlowState> {
 
   void _startTicker() {
     _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      emit(
-        state.copyWith(
-          callDuration: _currentCallDuration(state.flowState),
-          followUpRemaining: _remainingUntil(state.followUpReadyAt),
-        ),
+      final nextState = state.copyWith(
+        callDuration: _currentCallDuration(state.flowState),
+        followUpRemaining: _remainingUntil(state.followUpReadyAt),
       );
+      emit(nextState);
+      _maybeAutoTriggerFollowUp(nextState);
     });
+  }
+
+  void _maybeAutoTriggerFollowUp(CallFlowState currentState) {
+    final foregroundSince = _foregroundSince;
+    final followUpReadyAt = currentState.followUpReadyAt;
+    if (_followUpAutoTriggerInFlight ||
+        foregroundSince == null ||
+        followUpReadyAt == null ||
+        currentState.flowState != FakeCallState.awaitingNextStage ||
+        currentState.followUpStage == null ||
+        currentState.followUpRemaining > Duration.zero ||
+        followUpReadyAt.isBefore(foregroundSince)) {
+      return;
+    }
+
+    _followUpAutoTriggerInFlight = true;
+    unawaited(_triggerReadyFollowUp());
+  }
+
+  Future<void> _triggerReadyFollowUp() async {
+    try {
+      await _coordinator.triggerFollowUpStage();
+    } finally {
+      _followUpAutoTriggerInFlight = false;
+    }
   }
 
   void _stopTicker() {

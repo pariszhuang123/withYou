@@ -73,10 +73,10 @@ void main() {
       expect(find.text('02:34'), findsOneWidget);
     });
 
-    testWidgets('android in-call layout top-aligns caller identity', (
+    testWidgets('ringing subtitle animates from one dot to three dots', (
       tester,
     ) async {
-      final spec = service.resolve(const Locale('ko'), TargetPlatform.android);
+      final spec = service.resolve(const Locale('en'), TargetPlatform.android);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -84,9 +84,9 @@ void main() {
           home: Scaffold(
             body: CallTemplateRenderer(
               spec: spec,
-              visualState: CallScreenVisualState.inCall,
+              visualState: CallScreenVisualState.ringing,
               callerName: 'Xiao Chen',
-              callDuration: const Duration(seconds: 45),
+              callDuration: Duration.zero,
               onAccept: () {},
               onDecline: () {},
               onEnd: () {},
@@ -95,13 +95,53 @@ void main() {
         ),
       );
 
-      final nameTopLeft = tester.getTopLeft(find.text('Xiao Chen'));
-      final endButtonTopLeft = tester.getTopLeft(
-        find.bySemanticsLabel('End support call'),
-      );
+      expect(find.text('Incoming call.'), findsOneWidget);
 
-      expect(nameTopLeft.dy, lessThan(endButtonTopLeft.dy));
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('Incoming call..'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('Incoming call...'), findsOneWidget);
     });
+
+    testWidgets(
+      'android in-call layout keeps identity top-aligned and end action below',
+      (tester) async {
+        final spec = service.resolve(
+          const Locale('ko'),
+          TargetPlatform.android,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark(),
+            home: Scaffold(
+              body: CallTemplateRenderer(
+                spec: spec,
+                visualState: CallScreenVisualState.inCall,
+                callerName: 'Xiao Chen',
+                callDuration: const Duration(seconds: 45),
+                onAccept: () {},
+                onDecline: () {},
+                onEnd: () {},
+              ),
+            ),
+          ),
+        );
+
+        final screenCenterY = tester
+            .getRect(find.byType(CallTemplateRenderer))
+            .center
+            .dy;
+        final nameCenter = tester.getCenter(find.text('Xiao Chen'));
+        final endButtonCenter = tester.getCenter(
+          find.bySemanticsLabel('End support call'),
+        );
+
+        expect(nameCenter.dy, lessThan(screenCenterY));
+        expect(endButtonCenter.dy, greaterThan(screenCenterY));
+      },
+    );
 
     testWidgets('display-only controls stay out of semantics', (tester) async {
       final semanticsHandle = tester.ensureSemantics();

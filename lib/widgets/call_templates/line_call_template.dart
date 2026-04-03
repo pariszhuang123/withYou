@@ -22,15 +22,14 @@ class LineCallTemplate extends CallTemplateWidget {
 
     return Column(
       children: [
-        SizedBox(height: spacing.large),
+        const Spacer(),
         buildAvatar(context),
         buildIdentityBlock(context, textAlign: TextAlign.center),
         SizedBox(height: spacing.large),
         buildDisplayOnlyControls(context),
-        const Spacer(),
-        SizedBox(height: spacing.large),
+        SizedBox(height: spacing.xLarge),
         buildActionRow(context),
-        SizedBox(height: spacing.large),
+        const Spacer(),
       ],
     );
   }

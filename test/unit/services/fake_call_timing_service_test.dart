@@ -149,7 +149,7 @@ class _TestContentResolverContract implements ContentResolverContract {
 
   @override
   String resolveBundledRingtoneAssetPath() {
-    return 'assets/audio/system/ringtone_loop.m4a';
+    return 'assets/audio/system/ringtone_loop.mp3';
   }
 
   @override
@@ -220,7 +220,7 @@ void main() {
     expect(notification.cancelled, isTrue);
     expect(
       (audio.ringtoneLoops.single as BundledAudioSource).assetPath,
-      'assets/audio/system/ringtone_loop.m4a',
+      'assets/audio/system/ringtone_loop.mp3',
     );
   });
 

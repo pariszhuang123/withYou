@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.appSpacing;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,102 +58,117 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(spacing.large),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: BlocBuilder<CallFlowCubit, CallFlowState>(
-                builder: (context, callFlowState) {
-                  final selectedSnapshot = callFlowState
-                      .sceneReadiness[callFlowState.selectedScenario];
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: EdgeInsets.all(spacing.large),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 640,
+                  minHeight: constraints.maxHeight > (spacing.large * 2)
+                      ? constraints.maxHeight - (spacing.large * 2)
+                      : 0,
+                ),
+                child: IntrinsicHeight(
+                  child: BlocBuilder<CallFlowCubit, CallFlowState>(
+                    builder: (context, callFlowState) {
+                      final selectedSnapshot = callFlowState
+                          .sceneReadiness[callFlowState.selectedScenario];
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ThemedCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Choose support style',
-                              style: theme.textTheme.headlineMedium,
-                            ),
-                            SizedBox(height: spacing.large),
-                            SegmentedButton<Scenario>(
-                              segments: <ButtonSegment<Scenario>>[
-                                ButtonSegment<Scenario>(
-                                  value: Scenario.presence,
-                                  icon: _statusIconFor(
-                                    callFlowState.sceneReadiness[Scenario
-                                        .presence],
-                                  ),
-                                  label: const Text('Gentle'),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ThemedCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Choose support style',
+                                  style: theme.textTheme.headlineMedium,
                                 ),
-                                ButtonSegment<Scenario>(
-                                  value: Scenario.socialPull,
-                                  icon: _statusIconFor(
-                                    callFlowState.sceneReadiness[Scenario
-                                        .socialPull],
-                                  ),
-                                  label: const Text('Steady'),
-                                ),
-                                ButtonSegment<Scenario>(
-                                  value: Scenario.exitPressure,
-                                  icon: _statusIconFor(
-                                    callFlowState.sceneReadiness[Scenario
-                                        .exitPressure],
-                                  ),
-                                  label: const Text('Urgent'),
+                                SizedBox(height: spacing.large),
+                                SegmentedButton<Scenario>(
+                                  segments: <ButtonSegment<Scenario>>[
+                                    ButtonSegment<Scenario>(
+                                      value: Scenario.presence,
+                                      icon: _statusIconFor(
+                                        callFlowState.sceneReadiness[Scenario
+                                            .presence],
+                                      ),
+                                      label: const Text('Gentle'),
+                                    ),
+                                    ButtonSegment<Scenario>(
+                                      value: Scenario.socialPull,
+                                      icon: _statusIconFor(
+                                        callFlowState.sceneReadiness[Scenario
+                                            .socialPull],
+                                      ),
+                                      label: const Text('Steady'),
+                                    ),
+                                    ButtonSegment<Scenario>(
+                                      value: Scenario.exitPressure,
+                                      icon: _statusIconFor(
+                                        callFlowState.sceneReadiness[Scenario
+                                            .exitPressure],
+                                      ),
+                                      label: const Text('Urgent'),
+                                    ),
+                                  ],
+                                  selected: <Scenario>{
+                                    callFlowState.selectedScenario,
+                                  },
+                                  onSelectionChanged: (selection) {
+                                    unawaited(
+                                      _handleScenarioSelection(
+                                        context.read<CallFlowCubit>(),
+                                        selection.first,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
-                              selected: <Scenario>{
-                                callFlowState.selectedScenario,
-                              },
-                              onSelectionChanged: (selection) {
-                                unawaited(
-                                  _handleScenarioSelection(
-                                    context.read<CallFlowCubit>(),
-                                    selection.first,
-                                  ),
-                                );
-                              },
                             ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: spacing.xLarge),
-                      Center(
-                        child: GestureDetector(
-                          onTap: _isHandlingTrigger
-                              ? null
-                              : () => _handleTriggerPressed(
-                                  context.read<CallFlowCubit>(),
-                                  callFlowState,
-                                  selectedSnapshot,
+                          ),
+                          const Spacer(),
+                          Center(
+                            child: GestureDetector(
+                              onTap: _isHandlingTrigger
+                                  ? null
+                                  : () => _handleTriggerPressed(
+                                      context.read<CallFlowCubit>(),
+                                      callFlowState,
+                                      selectedSnapshot,
+                                    ),
+                              child: Semantics(
+                                container: true,
+                                button: true,
+                                enabled: !_isHandlingTrigger,
+                                label: localizations.homeStartCallSemanticLabel,
+                                child: ExcludeSemantics(
+                                  child: AppLogo(
+                                    size: theme.appSizes.homeTriggerSize * 3.2,
+                                    animated: true,
+                                  ),
                                 ),
-                          child: Semantics(
-                            container: true,
-                            button: true,
-                            enabled: !_isHandlingTrigger,
-                            label: 'Start selected support call',
-                            child: ExcludeSemantics(
-                              child: AppLogo(
-                                size: spacing.xLarge * 3,
-                                animated: true,
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      if (callFlowState.flowState ==
-                          FakeCallState.awaitingNextStage) ...[
-                        SizedBox(height: spacing.large),
-                        _AwaitingStageCard(state: callFlowState),
-                      ],
-                    ],
-                  );
-                },
+                          SizedBox(height: spacing.medium),
+                          Text(
+                            localizations.homeTriggerHint,
+                            style: theme.textTheme.bodyLarge,
+                            textAlign: TextAlign.center,
+                          ),
+                          const Spacer(),
+                          if (callFlowState.flowState ==
+                              FakeCallState.awaitingNextStage) ...[
+                            _AwaitingStageCard(state: callFlowState),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -237,7 +253,16 @@ class _HomeScreenState extends State<HomeScreen> {
     required Scenario scenario,
     SceneReadinessState? initialReadiness,
   }) async {
+    if (initialReadiness == null &&
+        !cubit.state.sceneReadiness.containsKey(scenario)) {
+      await cubit.refreshReadiness();
+    }
+
     var readiness = initialReadiness ?? _readinessFor(cubit.state, scenario);
+    if (!cubit.state.sceneReadiness.containsKey(scenario)) {
+      return false;
+    }
+
     while (mounted) {
       if (cubit.state.selectedScenario != scenario) {
         return false;
@@ -376,39 +401,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(localizations.settings),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: spacing.small),
-            child: Center(
-              child: _loadingPremium
-                  ? const SizedBox.shrink()
-                  : SizedBox(
-                      width: 160,
-                      child: ThemedButton(
-                        onPressed: _hasPremiumAccess
-                            ? () => _showPremiumActiveMessage(context)
-                            : () => _openUpgrade(context),
-                        semanticLabel: _hasPremiumAccess
-                            ? 'Premium active'
-                            : 'Upgrade to premium',
-                        child: Text(
-                          _hasPremiumAccess
-                              ? 'Premium active'
-                              : 'Upgrade to premium',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(localizations.settings)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(spacing.large),
-          child: Center(
+          child: Align(
+            alignment: Alignment.topLeft,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: BlocBuilder<AudioLanguageCubit, AudioLanguageState>(
@@ -425,6 +423,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (!_loadingPremium) ...[
+                          ThemedButton(
+                            onPressed: _hasPremiumAccess
+                                ? () => _showPremiumActiveMessage(context)
+                                : () => _openUpgrade(context),
+                            semanticLabel: _hasPremiumAccess
+                                ? localizations.premiumActive
+                                : localizations.upgradeToPremium,
+                            child: Text(
+                              _hasPremiumAccess
+                                  ? localizations.premiumActive
+                                  : localizations.upgradeToPremium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          SizedBox(height: spacing.large),
+                        ],
                         _NotificationsSettingsRow(
                           title: localizations.notificationsSectionTitle,
                           helper: localizations.notificationsSectionHelper,
@@ -442,12 +457,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         SizedBox(height: spacing.large),
                         Text(
-                          'Audio language',
+                          localizations.audioLanguageSectionTitle,
                           style: theme.textTheme.headlineMedium,
                         ),
                         SizedBox(height: spacing.small),
                         Text(
-                          'English and Simplified Chinese are built in. Any other language shows a download icon and is stored on the device after download.',
+                          localizations.audioLanguageSectionSubtitle,
                           style: theme.textTheme.bodyLarge,
                         ),
                         SizedBox(height: spacing.large),
@@ -457,8 +472,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           DropdownButtonFormField<String>(
                             initialValue: state.selectedLocaleTag,
                             isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Language',
+                            decoration: InputDecoration(
+                              labelText:
+                                  localizations.audioLanguageSectionTitle,
                             ),
                             items: state.languages
                                 .map(
@@ -564,15 +580,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _selectedLanguageSummary(AudioLanguageAvailability language) {
     if (language.language.localeTag == 'zh') {
-      return 'Simplified Chinese is a bundled offline language and is treated as ready immediately.';
+      return 'Simplified Chinese is ready offline.';
     }
     if (language.language.localeTag == 'en') {
-      return 'English is bundled and ready immediately.';
+      return 'English is ready offline.';
     }
     if (language.isReadyOffline) {
-      return '${language.language.displayName} is stored locally and ready for offline playback.';
+      return '${language.language.displayName} is ready offline.';
     }
-    return '${language.language.displayName} needs a one-time download before it can be used offline.';
+    return '${language.language.displayName} needs a download.';
   }
 
   Future<void> _refreshPremiumState() async {
@@ -662,15 +678,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _openUpgrade(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final premiumActiveMessage = AppLocalizations.of(
+      context,
+    )!.premiumActiveMessage;
     final decision = await widget.paywallContract.evaluate(
       surface: PaywallSurface.settings,
     );
     if (decision == PaywallDecision.hidden) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Premium is active. You can use all features.'),
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(premiumActiveMessage)));
       return;
     }
 
@@ -680,8 +695,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showPremiumActiveMessage(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Premium is active. You can use all features.'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.premiumActiveMessage),
       ),
     );
   }
@@ -760,10 +775,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.appSpacing;
+    final localizations = AppLocalizations.of(context)!;
     final benefits = _orderedBenefits(widget.focusedScenario);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Upgrade to premium')),
+      appBar: AppBar(title: Text(localizations.paywallTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(spacing.large),
@@ -778,20 +794,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Unlock stronger support options',
+                          localizations.paywallHeadline,
                           style: theme.textTheme.headlineMedium,
                         ),
                         SizedBox(height: spacing.small),
                         Text(
-                          'Premium adds the follow-up call scenarios and prepares the app for faster access from a home-screen widget.',
+                          localizations.paywallBody,
                           style: theme.textTheme.bodyLarge,
-                        ),
-                        SizedBox(height: spacing.medium),
-                        ThemedSurfacePanel(
-                          child: Text(
-                            'The store should show the current localized price during checkout. This screen keeps the value explanation together with purchase and restore actions.',
-                            style: theme.textTheme.bodyMedium,
-                          ),
                         ),
                       ],
                     ),
@@ -815,14 +824,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   ],
                   ThemedButton(
                     onPressed: _busy ? null : _purchase,
-                    semanticLabel: 'Unlock premium',
-                    child: const Text('See price in store'),
+                    semanticLabel: localizations.upgradeToPremium,
+                    child: Text(localizations.upgradeToPremium),
                   ),
                   SizedBox(height: spacing.small),
                   ThemedButton(
                     onPressed: _busy ? null : _restore,
-                    semanticLabel: 'Restore premium purchase',
-                    child: const Text('Restore purchase'),
+                    semanticLabel: localizations.paywallRestore,
+                    variant: ThemedButtonVariant.secondary,
+                    child: Text(localizations.paywallRestore),
                   ),
                 ],
               ),
@@ -866,7 +876,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
       _busy = false;
     });
     messenger.showSnackBar(
-      const SnackBar(content: Text('No premium purchase was restored.')),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.paywallRestoreFailed),
+      ),
     );
   }
 
@@ -874,11 +886,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final benefits = <_PaywallBenefit>[
       _benefitForScenario(Scenario.socialPull),
       _benefitForScenario(Scenario.exitPressure),
-      const _PaywallBenefit(
+      _PaywallBenefit(
         key: 'widget',
-        title: 'Quick access widget',
-        body:
-            'Prepare for faster launch from a home-screen widget so your selected support style is ready with fewer taps.',
+        title: AppLocalizations.of(context)!.paywallBenefitWidgetTitle,
+        body: AppLocalizations.of(context)!.paywallBenefitWidgetBody,
       ),
     ];
 
@@ -900,23 +911,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   _PaywallBenefit _benefitForScenario(Scenario scenario) {
+    final localizations = AppLocalizations.of(context)!;
     return switch (scenario) {
-      Scenario.presence => const _PaywallBenefit(
+      Scenario.presence => _PaywallBenefit(
         key: 'presence',
-        title: 'Scenario 1: Gentle',
+        title: localizations.scenarioPresence,
         body: 'One immediate call for a light interruption.',
       ),
-      Scenario.socialPull => const _PaywallBenefit(
+      Scenario.socialPull => _PaywallBenefit(
         key: 'socialPull',
-        title: 'Scenario 2: Steady',
-        body:
-            'One call now, then two follow-up calls later for a believable reason to keep stepping away.',
+        title: localizations.paywallBenefitSocialPullTitle,
+        body: localizations.paywallBenefitSocialPullBody,
       ),
-      Scenario.exitPressure => const _PaywallBenefit(
+      Scenario.exitPressure => _PaywallBenefit(
         key: 'exitPressure',
-        title: 'Scenario 3: Urgent',
-        body:
-            'Faster follow-up calls that build pressure when you need a stronger reason to leave quickly.',
+        title: localizations.paywallBenefitExitPressureTitle,
+        body: localizations.paywallBenefitExitPressureBody,
       ),
     };
   }

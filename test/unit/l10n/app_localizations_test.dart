@@ -11,9 +11,14 @@ void main() {
 
     expect(localizations, isA<AppLocalizationsEn>());
     expect(localizations.homeSubtitle, 'Always with you');
+    expect(localizations.homeTriggerHint, 'Tap the logo to start');
+    expect(
+      localizations.paywallHeadline,
+      'Unlock steady and urgent follow-up calls',
+    );
     expect(localizations.audioLanguageSectionTitle, 'Audio language');
     expect(localizations.callerNamePresence, 'Tommy');
-    expect(localizations.callerNameSocialPull, 'Lily');
+    expect(localizations.callerNameSocialPull, 'Benjamin');
     expect(localizations.callerNameExitPressure, 'Zack');
   });
 
@@ -22,6 +27,8 @@ void main() {
 
     expect(localizations, isA<AppLocalizationsZh>());
     expect(localizations.homeSubtitle, '随时为你');
+    expect(localizations.homeTriggerHint, '点击标志即可开始');
+    expect(localizations.paywallHeadline, '解锁柔性支援和快速支援的后续来电');
     expect(localizations.audioLanguageSectionTitle, '音频语言');
     expect(localizations.callerNamePresence, '小陈');
     expect(localizations.callerNameSocialPull, '小李');
@@ -33,6 +40,8 @@ void main() {
 
     expect(localizations, isA<AppLocalizationsZhTw>());
     expect(localizations.homeSubtitle, '隨時為你');
+    expect(localizations.homeTriggerHint, '點一下標誌即可開始');
+    expect(localizations.paywallHeadline, '解鎖柔性支援和快速支援的後續來電');
     expect(localizations.audioLanguageSectionTitle, '音訊語言');
     expect(localizations.callerNamePresence, '小陳');
     expect(localizations.callerNameSocialPull, '小李');

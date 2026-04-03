@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:with_you/blocs/call_flow_cubit.dart';
 import 'package:with_you/contracts/app_contracts.dart';
 import 'package:with_you/contracts/call_flow_contracts.dart';
 import 'package:with_you/contracts/commerce_contracts.dart';
 import 'package:with_you/contracts/readiness_contracts.dart';
+import 'package:with_you/l10n/app_localizations.dart';
 import 'package:with_you/services/app_router_service.dart';
+import 'package:with_you/theme/app_theme.dart';
 
 class _TestAppStateContract implements AppStateContract {
   Scenario? selectedScenario;
@@ -95,6 +99,64 @@ class _TestPaywallContract implements PaywallContract {
   Future<void> recordDismissed({required PaywallSurface surface}) async {}
 }
 
+class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
+  @override
+  CallFlowSnapshot currentSnapshot = CallFlowSnapshot.idle();
+
+  @override
+  Stream<CallFlowSnapshot> get snapshotStream => const Stream.empty();
+
+  @override
+  Future<void> acceptCurrentStage() async {}
+
+  @override
+  Future<void> declineCurrentStage() async {}
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> endCurrentStage() async {}
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  }) async {}
+
+  @override
+  Future<void> startFlow(Scenario scenario) async {}
+
+  @override
+  Future<void> triggerFollowUpStage() async {}
+}
+
+class _TestSceneReadinessContract implements SceneReadinessContract {
+  @override
+  Future<List<SceneReadinessSnapshot>> getAllReadiness() async {
+    return Scenario.values
+        .map(
+          (scenario) => SceneReadinessSnapshot(
+            scenario: scenario,
+            state: SceneReadinessState.ready,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<SceneReadinessSnapshot> getReadiness(Scenario scenario) async {
+    return SceneReadinessSnapshot(
+      scenario: scenario,
+      state: SceneReadinessState.ready,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -130,4 +192,46 @@ void main() {
     expect(appState.selectedScenario, Scenario.socialPull);
     expect(service.currentRoute.destination, AppRouteDestination.home);
   });
+
+  testWidgets(
+    'queued notification call intent routes to the call screen after router attach',
+    (tester) async {
+      final appState = _TestAppStateContract();
+      final service = buildService(appState);
+
+      await service.handleExternalIntent(
+        const AppLaunchIntent(
+          source: AppLaunchSource.notification,
+          destination: AppRouteDestination.call,
+          scenario: Scenario.exitPressure,
+          stage: 2,
+          sessionId: 'session-99',
+        ),
+      );
+
+      await tester.pumpWidget(
+        BlocProvider(
+          create: (_) => CallFlowCubit(
+            coordinator: _TestCallFlowCoordinatorContract(),
+            appStateContract: appState,
+            sceneReadinessContract: _TestSceneReadinessContract(),
+          ),
+          child: MaterialApp.router(
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: service.routerConfig,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(service.currentRoute.destination, AppRouteDestination.call);
+      expect(service.currentRoute.scenario, Scenario.exitPressure);
+      expect(service.currentRoute.stage, 2);
+      expect(service.currentRoute.sessionId, 'session-99');
+      expect(appState.selectedScenario, Scenario.exitPressure);
+    },
+  );
 }

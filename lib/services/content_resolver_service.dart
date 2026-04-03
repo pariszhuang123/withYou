@@ -105,7 +105,7 @@ class ContentResolverService implements ContentResolverContract {
 
   @override
   String resolveBundledRingtoneAssetPath() {
-    return 'assets/audio/system/ringtone_loop.m4a';
+    return 'assets/audio/system/ringtone_loop.mp3';
   }
 
   AppLocalizations _localizationsFor(String localeTag) {

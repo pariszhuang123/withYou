@@ -19,7 +19,6 @@ class AndroidNativeCallTemplate extends CallTemplateWidget {
   @override
   Widget buildBody(BuildContext context) {
     final spacing = Theme.of(context).appSpacing;
-
     if (isRinging) {
       return Column(
         children: [
@@ -28,26 +27,34 @@ class AndroidNativeCallTemplate extends CallTemplateWidget {
           buildIdentityBlock(context, textAlign: TextAlign.center),
           SizedBox(height: spacing.large),
           buildDisplayOnlyControls(context),
-          const Spacer(),
-          SizedBox(height: spacing.large),
+          SizedBox(height: spacing.xLarge),
           buildActionRow(context),
-          SizedBox(height: spacing.large),
+          const Spacer(),
         ],
       );
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildIdentityBlock(
-          context,
-          textAlign: TextAlign.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              buildAvatar(context),
+              buildIdentityBlock(
+                context,
+                textAlign: TextAlign.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+              ),
+              SizedBox(height: spacing.large),
+              buildDisplayOnlyControls(context),
+            ],
+          ),
         ),
-        SizedBox(height: spacing.xLarge),
-        buildDisplayOnlyControls(context),
         const Spacer(),
-        Center(child: buildActionRow(context)),
+        buildActionRow(context),
       ],
     );
   }

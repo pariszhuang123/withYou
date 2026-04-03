@@ -12,7 +12,7 @@ void main() {
     );
     expect(
       service.resolveCallerName(scenario: Scenario.socialPull, localeTag: 'en'),
-      'Lily',
+      'Benjamin',
     );
     expect(
       service.resolveCallerName(
@@ -88,7 +88,7 @@ void main() {
   test('resolves bundled ringtone path', () {
     expect(
       service.resolveBundledRingtoneAssetPath(),
-      'assets/audio/system/ringtone_loop.m4a',
+      'assets/audio/system/ringtone_loop.mp3',
     );
   });
 

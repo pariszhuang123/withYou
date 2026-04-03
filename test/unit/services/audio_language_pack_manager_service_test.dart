@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:with_you/contracts/call_flow_contracts.dart';
@@ -45,10 +43,11 @@ void main() {
   late AudioLanguagePackRepository packRepository;
   late _TestLogger logger;
   late AudioLanguagePackManagerService service;
-  late Map<Uri, List<int>> downloads;
 
   setUp(() async {
-    tempDirectory = await Directory.systemTemp.createTemp('audio_pack_manager_test');
+    tempDirectory = await Directory.systemTemp.createTemp(
+      'audio_pack_manager_test',
+    );
     appStateRepository = AppStateRepository(
       directoryProvider: () async => tempDirectory,
     );
@@ -56,7 +55,6 @@ void main() {
       directoryProvider: () async => tempDirectory,
     );
     logger = _TestLogger();
-    downloads = <Uri, List<int>>{};
 
     service = AudioLanguagePackManagerService(
       appStateContract: appStateRepository,
@@ -64,8 +62,6 @@ void main() {
       contentResolverContract: const ContentResolverService(),
       logger: logger,
       directoryProvider: () async => tempDirectory,
-      manifestLoader: () async => _buildManifest(downloads),
-      remoteFileDownloader: (uri) async => downloads[uri]!,
     );
   });
 
@@ -75,57 +71,45 @@ void main() {
     }
   });
 
-  test('ensureSelectedLocale prefers exact locale then persists it', () async {
-    final localeTag = await service.ensureSelectedLocale(
-      const <Locale>[Locale('zh', 'TW')],
-    );
+  test(
+    'ensureSelectedLocale collapses traditional Chinese locales to zh',
+    () async {
+      final localeTag = await service.ensureSelectedLocale(const <Locale>[
+        Locale('zh', 'TW'),
+      ]);
 
-    expect(localeTag, 'zh-TW');
-    expect(await appStateRepository.getSelectedAudioLocaleTag(), 'zh-TW');
-  });
+      expect(localeTag, 'zh');
+      expect(await appStateRepository.getSelectedAudioLocaleTag(), 'zh');
+    },
+  );
 
-  test('listAvailableLanguages marks bundled languages as ready offline', () async {
+  test('listAvailableLanguages only exposes bundled locales', () async {
     await appStateRepository.setSelectedAudioLocaleTag('zh');
 
     final languages = await service.listAvailableLanguages();
-    final zh = languages.firstWhere((entry) => entry.language.localeTag == 'zh');
-    final zhTw = languages.firstWhere(
-      (entry) => entry.language.localeTag == 'zh-TW',
-    );
 
-    expect(zh.status, AudioLanguagePackStatus.downloaded);
-    expect(zh.isReadyOffline, isTrue);
-    expect(zhTw.status, AudioLanguagePackStatus.notDownloaded);
+    expect(
+      languages.map((entry) => entry.language.localeTag).toList(),
+      <String>['en', 'zh'],
+    );
+    expect(
+      languages.every(
+        (entry) => entry.status == AudioLanguagePackStatus.downloaded,
+      ),
+      isTrue,
+    );
+    expect(languages.every((entry) => entry.isReadyOffline), isTrue);
   });
 
-  test('downloadLanguagePack saves all files locally and marks locale ready', () async {
-    await service.downloadLanguagePack('zh-TW');
-
-    final record = await packRepository.getPack('zh-TW');
-    expect(record, isNotNull);
-    expect(record!.status, AudioLanguagePackStatus.downloaded);
-
-    final file = File(
-      '${record.localRootPath!}${Platform.pathSeparator}social_pull${Platform.pathSeparator}stage_2.m4a',
+  test('downloadLanguagePack rejects unsupported locales', () async {
+    expect(
+      () => service.downloadLanguagePack('zh-TW'),
+      throwsA(isA<ArgumentError>()),
     );
-    expect(await file.exists(), isTrue);
   });
 
-  test('resolvePlayableAudio uses downloaded exact locale before zh fallback', () async {
-    await appStateRepository.setSelectedAudioLocaleTag('zh-TW');
-    await service.downloadLanguagePack('zh-TW');
-
-    final resolved = await service.resolvePlayableAudio(
-      scenario: Scenario.socialPull,
-      stage: 1,
-    );
-
-    expect(resolved.localeTag, 'zh-TW');
-    expect(resolved.source, isA<FileAudioSource>());
-  });
-
-  test('resolvePlayableAudio falls back to bundled zh when exact locale is absent', () async {
-    await appStateRepository.setSelectedAudioLocaleTag('zh-TW');
+  test('resolvePlayableAudio uses bundled zh for selected zh locale', () async {
+    await appStateRepository.setSelectedAudioLocaleTag('zh');
 
     final resolved = await service.resolvePlayableAudio(
       scenario: Scenario.presence,
@@ -133,44 +117,25 @@ void main() {
     );
 
     expect(resolved.localeTag, 'zh');
-    expect((resolved.source as BundledAudioSource).assetPath, contains('assets/audio/zh/'));
-    expect(logger.warnings.single, contains('Falling back'));
+    expect(resolved.source, isA<BundledAudioSource>());
   });
-}
 
-Future<Map<String, Object?>> _buildManifest(Map<Uri, List<int>> downloads) async {
-  final entries = <Map<String, Object?>>[];
-  final scenarios = <(String, int)>[
-    ('presence', 1),
-    ('socialPull', 1),
-    ('socialPull', 2),
-    ('socialPull', 3),
-    ('exitPressure', 1),
-    ('exitPressure', 2),
-    ('exitPressure', 3),
-  ];
+  test(
+    'resolvePlayableAudio falls back to bundled zh when selected locale is absent',
+    () async {
+      await appStateRepository.setSelectedAudioLocaleTag('zh-TW');
 
-  for (final entry in scenarios) {
-    final fileUri = Uri.parse(
-      'https://example.com/${entry.$1}_stage_${entry.$2}.m4a',
-    );
-    final bytes = utf8.encode('${entry.$1}-${entry.$2}');
-    downloads[fileUri] = bytes;
-    entries.add(<String, Object?>{
-      'scenario': entry.$1,
-      'stage': entry.$2,
-      'url': fileUri.toString(),
-      'checksum': sha256.convert(bytes).toString(),
-    });
-  }
+      final resolved = await service.resolvePlayableAudio(
+        scenario: Scenario.presence,
+        stage: 1,
+      );
 
-  return <String, Object?>{
-    'languages': <String, Object?>{
-      'zh-TW': <String, Object?>{
-        'version': '2026-04-02',
-        'checksum': 'pack-checksum',
-        'entries': entries,
-      },
+      expect(resolved.localeTag, 'zh');
+      expect(
+        (resolved.source as BundledAudioSource).assetPath,
+        contains('assets/audio/zh/'),
+      );
+      expect(logger.warnings.single, contains('Falling back'));
     },
-  };
+  );
 }

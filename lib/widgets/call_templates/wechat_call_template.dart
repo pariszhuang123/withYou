@@ -27,10 +27,9 @@ class WechatCallTemplate extends CallTemplateWidget {
         buildIdentityBlock(context, textAlign: TextAlign.center),
         SizedBox(height: spacing.xLarge),
         buildDisplayOnlyControls(context),
-        const Spacer(),
-        SizedBox(height: spacing.large),
+        SizedBox(height: spacing.xLarge),
         buildActionRow(context),
-        SizedBox(height: spacing.large),
+        const Spacer(),
       ],
     );
   }

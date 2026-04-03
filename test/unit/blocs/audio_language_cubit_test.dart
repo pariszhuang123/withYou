@@ -30,23 +30,21 @@ class _TestAudioLanguagePackManagerContract
     return <AudioLanguageAvailability>[
       AudioLanguageAvailability(
         language: const AudioLanguage(
+          localeTag: 'en',
+          displayName: 'English',
+          isBundled: true,
+        ),
+        status: AudioLanguagePackStatus.downloaded,
+        isSelected: selectedLocaleTag == 'en',
+      ),
+      AudioLanguageAvailability(
+        language: const AudioLanguage(
           localeTag: 'zh',
-          displayName: '简体中文',
+          displayName: 'Simplified Chinese',
           isBundled: true,
         ),
         status: AudioLanguagePackStatus.downloaded,
         isSelected: selectedLocaleTag == 'zh',
-      ),
-      AudioLanguageAvailability(
-        language: const AudioLanguage(
-          localeTag: 'zh-TW',
-          displayName: '繁體中文',
-          isBundled: false,
-        ),
-        status: downloaded
-            ? AudioLanguagePackStatus.downloaded
-            : AudioLanguagePackStatus.notDownloaded,
-        isSelected: selectedLocaleTag == 'zh-TW',
       ),
     ];
   }
@@ -82,19 +80,19 @@ void main() {
   });
 
   test('selectLanguage updates selected locale', () async {
-    await cubit.load(const <Locale>[Locale('en')]);
-    await cubit.selectLanguage('zh-TW');
+    await cubit.load(const <Locale>[Locale('zh')]);
+    await cubit.selectLanguage('en');
 
-    expect(cubit.state.selectedLocaleTag, 'zh-TW');
+    expect(cubit.state.selectedLocaleTag, 'en');
   });
 
   test('downloadLanguage refreshes statuses after download', () async {
     await cubit.load(const <Locale>[Locale('en')]);
-    await cubit.downloadLanguage('zh-TW');
+    await cubit.downloadLanguage('zh');
 
-    final zhTw = cubit.state.languages.firstWhere(
-      (entry) => entry.language.localeTag == 'zh-TW',
+    final zh = cubit.state.languages.firstWhere(
+      (entry) => entry.language.localeTag == 'zh',
     );
-    expect(zhTw.status, AudioLanguagePackStatus.downloaded);
+    expect(zh.status, AudioLanguagePackStatus.downloaded);
   });
 }

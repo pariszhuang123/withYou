@@ -7,7 +7,13 @@ import UserNotifications
   private let methodChannelName = "with_you/notifications/methods"
   private let eventChannelName = "with_you/notifications/events"
   private let pendingEventsKey = "with_you_pending_notification_events"
+  private let widgetEventChannelName = "with_you/widget_launch/events"
+  private let pendingWidgetEventsKey = "with_you_pending_widget_launch_events"
+  private let widgetScheme = "withyou"
+  private let widgetHost = "widget-launch"
   private var eventSink: FlutterEventSink?
+  fileprivate var widgetEventSink: FlutterEventSink?
+  private var widgetStreamHandler: WidgetLaunchStreamHandler?
 
   override func application(
     _ application: UIApplication,
@@ -30,10 +36,33 @@ import UserNotifications
         binaryMessenger: controller.binaryMessenger
       )
       eventChannel.setStreamHandler(self)
+
+      let widgetEventChannel = FlutterEventChannel(
+        name: widgetEventChannelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      let widgetStreamHandler = WidgetLaunchStreamHandler(appDelegate: self)
+      self.widgetStreamHandler = widgetStreamHandler
+      widgetEventChannel.setStreamHandler(widgetStreamHandler)
+    }
+
+    if let url = launchOptions?[.url] as? URL {
+      _ = handleWidgetURL(url)
     }
 
     reconcileMissedNotifications()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if handleWidgetURL(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
   }
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
@@ -174,6 +203,36 @@ import UserNotifications
     UserDefaults.standard.removeObject(forKey: pendingEventsKey)
   }
 
+  private func emitWidgetEvent(_ event: [String: String]) {
+    if let widgetEventSink {
+      widgetEventSink(event)
+      return
+    }
+
+    let existing = UserDefaults.standard.array(forKey: pendingWidgetEventsKey) as? [[String: String]] ?? []
+    UserDefaults.standard.set(existing + [event], forKey: pendingWidgetEventsKey)
+  }
+
+  fileprivate func flushPendingWidgetEvents() {
+    guard let widgetEventSink else { return }
+    let existing = UserDefaults.standard.array(forKey: pendingWidgetEventsKey) as? [[String: String]] ?? []
+    for event in existing {
+      widgetEventSink(event)
+    }
+    UserDefaults.standard.removeObject(forKey: pendingWidgetEventsKey)
+  }
+
+  private func handleWidgetURL(_ url: URL) -> Bool {
+    guard url.scheme == widgetScheme, url.host == widgetHost else {
+      return false
+    }
+
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    let scenario = components?.queryItems?.first(where: { $0.name == "scenario" })?.value ?? ""
+    emitWidgetEvent(["scenario": scenario])
+    return true
+  }
+
   private func reconcileMissedNotifications() {
     UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
       let nowEpochMs = Int(Date().timeIntervalSince1970 * 1000)
@@ -244,6 +303,25 @@ import UserNotifications
 
   func onCancel(withArguments arguments: Any?) -> FlutterError? {
     eventSink = nil
+    return nil
+  }
+}
+
+final class WidgetLaunchStreamHandler: NSObject, FlutterStreamHandler {
+  init(appDelegate: AppDelegate) {
+    self.appDelegate = appDelegate
+  }
+
+  private weak var appDelegate: AppDelegate?
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    appDelegate?.widgetEventSink = events
+    appDelegate?.flushPendingWidgetEvents()
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    appDelegate?.widgetEventSink = nil
     return nil
   }
 }

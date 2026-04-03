@@ -374,4 +374,98 @@ void main() {
       await service.dispose();
     },
   );
+
+  test(
+    'triggerFollowUpStage clears pending notifications before resuming the stage',
+    () async {
+      final timing = _TestTimingContract();
+      final notifications = _TestNotificationContract();
+      final pendingRepository = _TestPendingFollowUpRepository();
+      final service = CallFlowCoordinatorService(
+        timingContract: timing,
+        contentResolverContract: _TestContentResolver(),
+        notificationContract: notifications,
+        pendingFollowUpRepository: pendingRepository,
+        localeTagProvider: () => 'en',
+      );
+
+      await service.startFlow(Scenario.socialPull);
+      await timing.declineCurrentStage();
+      await Future<void>.delayed(Duration.zero);
+
+      final sessionId = service.currentSnapshot.sessionId!;
+      pendingRepository.records
+        ..clear()
+        ..add(
+          PendingFollowUp(
+            sessionId: sessionId,
+            scenario: Scenario.socialPull,
+            stage: 2,
+            scheduledAtUtc: DateTime.now().toUtc(),
+            expiresAtUtc: DateTime.now().toUtc().add(
+              const Duration(minutes: 2),
+            ),
+            callerName: 'Tommy',
+            status: PendingFollowUpStatus.pending,
+          ),
+        );
+
+      await service.triggerFollowUpStage();
+
+      expect(notifications.cancelledSessions, contains(sessionId));
+      expect(pendingRepository.records, isEmpty);
+      expect(timing.currentStage, 2);
+      expect(service.currentSnapshot.flowState, FakeCallState.ringing);
+
+      await service.dispose();
+    },
+  );
+
+  test(
+    'startFlow clears pending follow-ups from older sessions before creating a new one',
+    () async {
+      final timing = _TestTimingContract();
+      final notifications = _TestNotificationContract();
+      final pendingRepository = _TestPendingFollowUpRepository()
+        ..records.addAll([
+          PendingFollowUp(
+            sessionId: 'older-session-a',
+            scenario: Scenario.socialPull,
+            stage: 2,
+            scheduledAtUtc: DateTime.now().toUtc(),
+            expiresAtUtc: DateTime.now().toUtc().add(
+              const Duration(minutes: 2),
+            ),
+            callerName: 'Tommy',
+            status: PendingFollowUpStatus.pending,
+          ),
+          PendingFollowUp(
+            sessionId: 'older-session-b',
+            scenario: Scenario.exitPressure,
+            stage: 2,
+            scheduledAtUtc: DateTime.now().toUtc(),
+            expiresAtUtc: DateTime.now().toUtc().add(
+              const Duration(minutes: 2),
+            ),
+            callerName: 'Tommy',
+            status: PendingFollowUpStatus.pending,
+          ),
+        ]);
+      final service = CallFlowCoordinatorService(
+        timingContract: timing,
+        contentResolverContract: _TestContentResolver(),
+        notificationContract: notifications,
+        pendingFollowUpRepository: pendingRepository,
+        localeTagProvider: () => 'en',
+      );
+
+      await service.startFlow(Scenario.socialPull);
+
+      expect(notifications.cancelledSessions, contains('older-session-a'));
+      expect(notifications.cancelledSessions, contains('older-session-b'));
+      expect(pendingRepository.records, isEmpty);
+
+      await service.dispose();
+    },
+  );
 }

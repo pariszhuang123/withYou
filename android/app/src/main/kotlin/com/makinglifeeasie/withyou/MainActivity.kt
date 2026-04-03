@@ -11,13 +11,19 @@ class MainActivity : FlutterActivity() {
             activity = this,
             flutterEngine = flutterEngine,
         )
+        WidgetLaunchPlatformBridge.configure(
+            activity = this,
+            flutterEngine = flutterEngine,
+        )
         NotificationPlatformBridge.handleLaunchIntent(this, intent)
+        WidgetLaunchPlatformBridge.handleLaunchIntent(this, intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         NotificationPlatformBridge.handleLaunchIntent(this, intent)
+        WidgetLaunchPlatformBridge.handleLaunchIntent(this, intent)
     }
 
     override fun onRequestPermissionsResult(

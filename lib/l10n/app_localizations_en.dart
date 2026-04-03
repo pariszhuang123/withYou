@@ -40,7 +40,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get audioLanguageSectionSubtitle =>
-      'Download a language pack before you need it so support audio works offline.';
+      'English and Simplified Chinese are ready offline. Korean downloads will come later.';
 
   @override
   String get audioLanguageReady => 'Ready offline';
@@ -68,12 +68,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsSectionTitle => 'Notifications';
 
   @override
-  String get notificationsSectionEnabled =>
-      'Follow-up call notifications are on.';
+  String get notificationsSectionEnabled => 'Follow-up notifications are on.';
 
   @override
   String get notificationsSectionNeedsPermission =>
-      'Follow-up calls need system notifications turned on.';
+      'Turn on notifications for follow-up calls.';
 
   @override
   String get notificationsSectionUnavailable =>
@@ -86,8 +85,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsSectionManage => 'Open system settings';
 
   @override
-  String get notificationsSectionHelper =>
-      'Steady and urgent scenarios depend on follow-up notifications.';
+  String get notificationsSectionHelper => 'Needed for Steady and Urgent.';
+
+  @override
+  String get homeTriggerHint => 'Tap the logo to start';
+
+  @override
+  String get homeStartCallSemanticLabel => 'Start selected support call';
+
+  @override
+  String get upgradeToPremium => 'Upgrade to premium';
+
+  @override
+  String get premiumActive => 'Premium active';
+
+  @override
+  String get premiumActiveMessage =>
+      'Premium is active. You can use all features.';
+
+  @override
+  String get paywallTitle => 'Upgrade to premium';
+
+  @override
+  String get paywallHeadline => 'Unlock steady and urgent follow-up calls';
+
+  @override
+  String get paywallBody =>
+      'Get extra support when you are stuck: steady follow-up calls keep the interruption going, urgent follow-up calls help you get out quickly, and the home-screen widget lets you trigger a call with one touch.';
+
+  @override
+  String get paywallStoreNote =>
+      'Premium keeps steady, urgent, and widget support ready when you need it.';
+
+  @override
+  String get paywallSeePrice => 'Upgrade to premium';
+
+  @override
+  String get paywallRestore => 'Restore purchase';
+
+  @override
+  String get paywallRestoreFailed => 'No premium purchase was restored.';
+
+  @override
+  String get paywallBenefitSocialPullTitle => 'Steady support';
+
+  @override
+  String get paywallBenefitSocialPullBody =>
+      'Start a call now, then keep the interruption going with two follow-up calls.';
+
+  @override
+  String get paywallBenefitExitPressureTitle => 'Urgent support';
+
+  @override
+  String get paywallBenefitExitPressureBody =>
+      'Use a faster sequence of follow-up calls when you want to get out quickly.';
+
+  @override
+  String get paywallBenefitWidgetTitle => 'Home-screen widget';
+
+  @override
+  String get paywallBenefitWidgetBody =>
+      'Trigger your selected support call from the home screen with one touch when you need it fast.';
 
   @override
   String get notificationFollowUpBody => 'Tap to answer your support call.';
@@ -96,7 +154,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callerNamePresence => 'Tommy';
 
   @override
-  String get callerNameSocialPull => 'Lily';
+  String get callerNameSocialPull => 'Benjamin';
 
   @override
   String get callerNameExitPressure => 'Zack';

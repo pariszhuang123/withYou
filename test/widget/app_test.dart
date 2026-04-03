@@ -63,17 +63,6 @@ class _TestAudioLanguagePackManagerContract
         status: AudioLanguagePackStatus.downloaded,
         isSelected: selectedLocale == 'zh',
       ),
-      AudioLanguageAvailability(
-        language: const AudioLanguage(
-          localeTag: 'zh-TW',
-          displayName: 'Traditional Chinese (Taiwan)',
-          isBundled: false,
-        ),
-        status: downloaded
-            ? AudioLanguagePackStatus.downloaded
-            : AudioLanguagePackStatus.notDownloaded,
-        isSelected: selectedLocale == 'zh-TW',
-      ),
     ];
   }
 
@@ -287,6 +276,11 @@ class _TestPaywallContract implements PaywallContract {
 
 class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
   final _controller = StreamController<CallFlowSnapshot>.broadcast();
+  FakeCallState declineResultState;
+
+  _TestCallFlowCoordinatorContract({
+    this.declineResultState = FakeCallState.completed,
+  });
 
   @override
   CallFlowSnapshot currentSnapshot = CallFlowSnapshot.idle();
@@ -311,13 +305,17 @@ class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
   @override
   Future<void> declineCurrentStage() async {
     currentSnapshot = CallFlowSnapshot(
-      flowState: FakeCallState.completed,
+      flowState: declineResultState,
       scenario: currentSnapshot.scenario,
       currentStage: currentSnapshot.currentStage,
       callerName: currentSnapshot.callerName,
       sessionId: currentSnapshot.sessionId,
-      followUpStage: null,
-      followUpReadyAt: null,
+      followUpStage: declineResultState == FakeCallState.awaitingNextStage
+          ? currentSnapshot.currentStage + 1
+          : null,
+      followUpReadyAt: declineResultState == FakeCallState.awaitingNextStage
+          ? DateTime.now()
+          : null,
     );
     _controller.add(currentSnapshot);
   }
@@ -389,6 +387,11 @@ class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
 }
 
 void main() {
+  Future<void> pumpForCallUi(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+
   WithYouApp buildApp({
     required _TestAudioLanguagePackManagerContract manager,
     required _TestCallFlowCoordinatorContract coordinator,
@@ -397,6 +400,7 @@ void main() {
     required _TestPremiumAccessContract premiumAccess,
     SceneReadinessContract? sceneReadiness,
     _TestPaywallContract? paywallContract,
+    Future<void> Function()? onCallCompletedExit,
   }) {
     final appRouterContract = AppRouterService(
       appName: 'With You',
@@ -415,6 +419,7 @@ void main() {
       audioLanguagePackManagerContract: manager,
       callFlowCoordinatorContract: coordinator,
       sceneReadinessContract: sceneReadiness ?? _TestSceneReadinessContract(),
+      onCallCompletedExit: onCallCompletedExit,
     );
   }
 
@@ -440,15 +445,22 @@ void main() {
 
     expect(find.text('Release channel: development'), findsNothing);
     expect(find.text('APP_ENV=dev'), findsNothing);
+    expect(find.text('Tap the logo to start'), findsOneWidget);
     expect(find.text('Choose support style'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Open settings'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Audio language'), findsOneWidget);
+    expect(find.text('Audio language'), findsWidgets);
     expect(find.text('Upgrade to premium'), findsOneWidget);
     expect(find.text('Notifications'), findsOneWidget);
-    expect(find.text('Follow-up call notifications are on.'), findsOneWidget);
+    expect(
+      find.text(
+        'English and Simplified Chinese are ready offline. Korean downloads will come later.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Traditional Chinese'), findsNothing);
   });
 
   testWidgets(
@@ -514,9 +526,7 @@ void main() {
     },
   );
 
-  testWidgets('selecting a downloadable language from settings downloads it', (
-    tester,
-  ) async {
+  testWidgets('settings only shows bundled audio languages', (tester) async {
     final manager = _TestAudioLanguagePackManagerContract();
     final coordinator = _TestCallFlowCoordinatorContract();
     final appState = _TestAppStateContract();
@@ -539,10 +549,11 @@ void main() {
 
     await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Traditional Chinese').last);
-    await tester.pumpAndSettle();
 
-    expect(manager.downloaded, isTrue);
+    expect(find.textContaining('English'), findsWidgets);
+    expect(find.textContaining('Simplified Chinese'), findsWidgets);
+    expect(find.textContaining('Traditional Chinese'), findsNothing);
+    expect(manager.downloaded, isFalse);
   });
 
   testWidgets('starting the gentle scenario opens the call screen', (
@@ -566,11 +577,78 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.bySemanticsLabel('Start selected support call'));
-    await tester.pumpAndSettle();
+    await pumpForCallUi(tester);
 
     expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
     expect(find.text('Xiao Chen'), findsOneWidget);
     expect(find.bySemanticsLabel('Caller avatar'), findsNothing);
+  });
+
+  testWidgets('completing an in-app call requests app exit on Android', (
+    tester,
+  ) async {
+    final manager = _TestAudioLanguagePackManagerContract();
+    final coordinator = _TestCallFlowCoordinatorContract();
+    final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+    var exitCount = 0;
+
+    await tester.pumpWidget(
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
+        onCallCompletedExit: () async {
+          exitCount++;
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Start selected support call'));
+    await pumpForCallUi(tester);
+    await tester.tap(find.bySemanticsLabel('Decline support call'));
+    await pumpForCallUi(tester);
+
+    expect(exitCount, 1);
+  });
+
+  testWidgets('dismissing a call stage with follow-up still exits the app', (
+    tester,
+  ) async {
+    final manager = _TestAudioLanguagePackManagerContract();
+    final coordinator = _TestCallFlowCoordinatorContract(
+      declineResultState: FakeCallState.awaitingNextStage,
+    );
+    final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+    var exitCount = 0;
+
+    await tester.pumpWidget(
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
+        onCallCompletedExit: () async {
+          exitCount++;
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Start selected support call'));
+    await pumpForCallUi(tester);
+    await tester.tap(find.bySemanticsLabel('Decline support call'));
+    await pumpForCallUi(tester);
+
+    expect(exitCount, 1);
+    expect(find.bySemanticsLabel('Accept support call'), findsNothing);
   });
 
   testWidgets(
@@ -600,15 +678,18 @@ void main() {
       await tester.tap(find.text('Steady'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Unlock stronger support options'), findsOneWidget);
+      expect(
+        find.text('Unlock steady and urgent follow-up calls'),
+        findsOneWidget,
+      );
 
-      final purchaseButton = find.text('See price in store');
+      final purchaseButton = find.byType(ElevatedButton).first;
       await tester.ensureVisible(purchaseButton);
       await tester.tap(purchaseButton);
       await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('Start selected support call'));
-      await tester.pumpAndSettle();
+      await pumpForCallUi(tester);
 
       expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
       expect(find.text('Xiao Li'), findsOneWidget);
@@ -650,15 +731,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notificationReadiness.requestCount, 1);
-      expect(find.text('Unlock stronger support options'), findsOneWidget);
+      expect(
+        find.text('Unlock steady and urgent follow-up calls'),
+        findsOneWidget,
+      );
 
-      final purchaseButton = find.text('See price in store');
+      final purchaseButton = find.byType(ElevatedButton).first;
       await tester.ensureVisible(purchaseButton);
       await tester.tap(purchaseButton);
       await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('Start selected support call'));
-      await tester.pumpAndSettle();
+      await pumpForCallUi(tester);
 
       expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
       expect(find.text('Xiao Zhang'), findsOneWidget);
@@ -698,7 +782,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('Start selected support call'));
-      await tester.pumpAndSettle();
+      await pumpForCallUi(tester);
 
       expect(notificationReadiness.requestCount, 0);
       expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
@@ -733,12 +817,15 @@ void main() {
       await tester.tap(find.text('Steady'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Unlock stronger support options'), findsOneWidget);
+      expect(
+        find.text('Unlock steady and urgent follow-up calls'),
+        findsOneWidget,
+      );
       await tester.pageBack();
       await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('Start selected support call'));
-      await tester.pumpAndSettle();
+      await pumpForCallUi(tester);
 
       expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
       expect(find.text('Xiao Chen'), findsOneWidget);

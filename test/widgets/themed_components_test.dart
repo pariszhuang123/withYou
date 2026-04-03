@@ -97,6 +97,34 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Start support call'), findsOneWidget);
     });
+
+    testWidgets('supports a visible but secondary button treatment', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: ThemedButton(
+              onPressed: () {},
+              variant: ThemedButtonVariant.secondary,
+              semanticLabel: 'Restore purchase',
+              child: const Text('Restore purchase'),
+            ),
+          ),
+        ),
+      );
+
+      final ElevatedButton button = tester.widget(find.byType(ElevatedButton));
+      expect(
+        button.style?.backgroundColor?.resolve({}),
+        AppColorTokens.light.surfaceSecondary,
+      );
+      expect(
+        button.style?.foregroundColor?.resolve({}),
+        AppColorTokens.light.textPrimary,
+      );
+    });
   });
 
   group('ThemedHeroActionButton', () {
@@ -239,12 +267,14 @@ void main() {
         ),
       );
 
-      expect(find.byType(AnimatedScale), findsOneWidget);
-      final AnimatedScale animatedScale = tester.widget(
-        find.byType(AnimatedScale),
+      final logoTransition = find.descendant(
+        of: find.byType(AppLogo),
+        matching: find.byType(ScaleTransition),
       );
-      expect(animatedScale.scale, 1.03);
-      expect(animatedScale.duration, AppMotionTokens.base.avatarPulse);
+      expect(logoTransition, findsOneWidget);
+      final ScaleTransition animatedLogo = tester.widget(logoTransition);
+      expect(animatedLogo.scale.value, greaterThan(0.9));
+      expect(animatedLogo.scale.value, lessThan(1.1));
     });
 
     testWidgets('supports large text scales without overflow', (tester) async {

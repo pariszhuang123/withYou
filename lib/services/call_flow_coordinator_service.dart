@@ -52,6 +52,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
 
   @override
   Future<void> startFlow(Scenario scenario) async {
+    await _clearPendingFollowUpsForNewFlow();
     final sessionId = DateTime.now().microsecondsSinceEpoch.toString();
     _activeSessionId = sessionId;
     _currentSnapshot = CallFlowSnapshot(
@@ -66,6 +67,21 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
     _emitSnapshot();
     await _pendingFollowUpRepository.deleteBySession(sessionId);
     await _timingContract.startFlow(sessionId: sessionId, scenario: scenario);
+  }
+
+  Future<void> _clearPendingFollowUpsForNewFlow() async {
+    final allPending = await _pendingFollowUpRepository
+        .getAllPendingFollowUps();
+    final sessionIds = allPending.map((entry) => entry.sessionId).toSet();
+    for (final sessionId in sessionIds) {
+      await _notificationContract.cancelAll(sessionId);
+      await _pendingFollowUpRepository.deleteBySession(sessionId);
+    }
+    final activeSessionId = _activeSessionId;
+    if (activeSessionId != null) {
+      await _notificationContract.cancelAll(activeSessionId);
+      await _pendingFollowUpRepository.deleteBySession(activeSessionId);
+    }
   }
 
   @override
@@ -116,6 +132,15 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
     if (sessionId == null || scenario == null || followUpStage == null) {
       return;
     }
+
+    final pending = await _findPending(sessionId, followUpStage);
+    if (pending != null) {
+      await _pendingFollowUpRepository.deletePendingFollowUp(
+        sessionId: sessionId,
+        stage: followUpStage,
+      );
+    }
+    await _notificationContract.cancelAll(sessionId);
 
     await _timingContract.onNotificationTapped(
       sessionId: sessionId,

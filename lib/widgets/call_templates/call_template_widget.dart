@@ -110,10 +110,6 @@ abstract class CallTemplateWidget extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final palette = spec.palette;
     final spacing = Theme.of(context).appSpacing;
-    final subtitle = isRinging
-        ? spec.localizedVoiceCallLabel
-        : _formatDuration(callDuration);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: crossAxisAlignment,
@@ -124,8 +120,11 @@ abstract class CallTemplateWidget extends StatelessWidget {
           style: textTheme.headlineLarge?.copyWith(color: palette.textPrimary),
         ),
         SizedBox(height: spacing.small),
-        Text(
-          subtitle,
+        _CallStatusSubtitle(
+          label: isRinging
+              ? spec.localizedVoiceCallLabel
+              : _formatDuration(callDuration),
+          isRinging: isRinging,
           textAlign: textAlign,
           style: textTheme.bodyLarge?.copyWith(color: palette.textSecondary),
         ),
@@ -217,5 +216,101 @@ abstract class CallTemplateWidget extends StatelessWidget {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+}
+
+class _CallStatusSubtitle extends StatelessWidget {
+  const _CallStatusSubtitle({
+    required this.label,
+    required this.isRinging,
+    required this.textAlign,
+    required this.style,
+  });
+
+  final String label;
+  final bool isRinging;
+  final TextAlign textAlign;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isRinging) {
+      return Text(label, textAlign: textAlign, style: style);
+    }
+
+    return _RingingSubtitleText(
+      label: label,
+      textAlign: textAlign,
+      style: style,
+    );
+  }
+}
+
+class _RingingSubtitleText extends StatefulWidget {
+  const _RingingSubtitleText({
+    required this.label,
+    required this.textAlign,
+    required this.style,
+  });
+
+  final String label;
+  final TextAlign textAlign;
+  final TextStyle? style;
+
+  @override
+  State<_RingingSubtitleText> createState() => _RingingSubtitleTextState();
+}
+
+class _RingingSubtitleTextState extends State<_RingingSubtitleText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return Text(
+        '${widget.label}...',
+        textAlign: widget.textAlign,
+        style: widget.style,
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final step = (_controller.value * 3).floor() % 3;
+        final dots = '.' * (step + 1);
+        return Text(
+          '${widget.label}$dots',
+          textAlign: widget.textAlign,
+          style: widget.style,
+        );
+      },
+    );
   }
 }

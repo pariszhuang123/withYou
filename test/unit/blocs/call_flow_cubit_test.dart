@@ -65,6 +65,7 @@ class _TestSceneReadinessContract implements SceneReadinessContract {
 
 class _TestCoordinatorContract implements CallFlowCoordinatorContract {
   final _controller = StreamController<CallFlowSnapshot>.broadcast();
+  int triggerFollowUpCount = 0;
 
   @override
   CallFlowSnapshot currentSnapshot = CallFlowSnapshot.idle();
@@ -164,6 +165,7 @@ class _TestCoordinatorContract implements CallFlowCoordinatorContract {
 
   @override
   Future<void> triggerFollowUpStage() async {
+    triggerFollowUpCount++;
     currentSnapshot = CallFlowSnapshot(
       flowState: FakeCallState.ringing,
       scenario: currentSnapshot.scenario,
@@ -254,6 +256,65 @@ void main() {
     },
   );
 
+  test('foreground expiry auto-triggers a ready follow-up stage', () async {
+    final coordinator = _TestCoordinatorContract();
+    final cubit = CallFlowCubit(
+      coordinator: coordinator,
+      appStateContract: _TestAppStateContract(),
+      sceneReadinessContract: _TestSceneReadinessContract(),
+    );
+
+    cubit.setAppInForeground(true);
+    coordinator.currentSnapshot = CallFlowSnapshot(
+      flowState: FakeCallState.awaitingNextStage,
+      scenario: Scenario.socialPull,
+      currentStage: 1,
+      callerName: 'Xiao Li',
+      sessionId: 'session-1',
+      followUpStage: 2,
+      followUpReadyAt: DateTime.now(),
+    );
+    coordinator.snapshotStream.listen((_) {});
+    coordinator._controller.add(coordinator.currentSnapshot);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(coordinator.triggerFollowUpCount, 1);
+    expect(cubit.state.flowState, FakeCallState.ringing);
+    expect(cubit.state.currentStage, 2);
+
+    await cubit.close();
+  });
+
+  test(
+    'background expiry does not auto-trigger a ready follow-up stage',
+    () async {
+      final coordinator = _TestCoordinatorContract();
+      final cubit = CallFlowCubit(
+        coordinator: coordinator,
+        appStateContract: _TestAppStateContract(),
+        sceneReadinessContract: _TestSceneReadinessContract(),
+      );
+
+      cubit.setAppInForeground(false);
+      coordinator.currentSnapshot = CallFlowSnapshot(
+        flowState: FakeCallState.awaitingNextStage,
+        scenario: Scenario.socialPull,
+        currentStage: 1,
+        callerName: 'Xiao Li',
+        sessionId: 'session-1',
+        followUpStage: 2,
+        followUpReadyAt: DateTime.now(),
+      );
+      coordinator._controller.add(coordinator.currentSnapshot);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(coordinator.triggerFollowUpCount, 0);
+      expect(cubit.state.flowState, FakeCallState.awaitingNextStage);
+
+      await cubit.close();
+    },
+  );
+
   test('locked or unarmed scenarios stay blocked on launch', () async {
     final coordinator = _TestCoordinatorContract();
     final cubit = CallFlowCubit(
@@ -274,4 +335,37 @@ void main() {
 
     await cubit.close();
   });
+
+  test(
+    'completed flow clears caller identity and active session state',
+    () async {
+      final coordinator = _TestCoordinatorContract()
+        ..currentSnapshot = const CallFlowSnapshot(
+          flowState: FakeCallState.ringing,
+          scenario: Scenario.presence,
+          currentStage: 1,
+          callerName: 'Taylor',
+          sessionId: 'session-1',
+          followUpStage: null,
+          followUpReadyAt: null,
+        );
+      final cubit = CallFlowCubit(
+        coordinator: coordinator,
+        appStateContract: _TestAppStateContract(),
+        sceneReadinessContract: _TestSceneReadinessContract(),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      await cubit.end();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state.flowState, FakeCallState.completed);
+      expect(cubit.state.activeScenario, isNull);
+      expect(cubit.state.currentStage, 0);
+      expect(cubit.state.callerName, isNull);
+      expect(cubit.state.sessionId, isNull);
+
+      await cubit.close();
+    },
+  );
 }

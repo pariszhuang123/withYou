@@ -63,7 +63,7 @@ class AppRouterService implements AppRouterContract {
       ],
     );
     _currentRoute = const AppRouteState.home();
-    _router.routerDelegate.addListener(_syncCurrentRouteFromRouter);
+    _router.routerDelegate.addListener(_handleRouterDelegateChanged);
   }
 
   static const String _homePath = '/';
@@ -85,6 +85,9 @@ class AppRouterService implements AppRouterContract {
   late AppRouteState _currentRoute;
   AppRouteState _lastNonCallRoute = const AppRouteState.home();
   bool _callRouteVisible = false;
+  bool _routerAttached = false;
+  bool _applyingPendingExternalIntent = false;
+  AppLaunchIntent? _pendingExternalIntent;
 
   @override
   RouterConfig<Object> get routerConfig => _router;
@@ -172,6 +175,42 @@ class AppRouterService implements AppRouterContract {
 
   @override
   Future<void> handleExternalIntent(AppLaunchIntent intent) async {
+    if (!_routerAttached) {
+      _pendingExternalIntent = intent;
+      await _persistIntentScenario(intent);
+      _currentRoute = AppRouteState(
+        destination: intent.destination,
+        scenario: intent.scenario,
+        stage: intent.stage,
+        sessionId: intent.sessionId,
+      );
+      return;
+    }
+
+    await _dispatchExternalIntent(intent);
+  }
+
+  void _handleRouterDelegateChanged() {
+    _routerAttached = true;
+    _syncCurrentRouteFromRouter();
+
+    final pendingIntent = _pendingExternalIntent;
+    if (pendingIntent == null || _applyingPendingExternalIntent) {
+      return;
+    }
+
+    _pendingExternalIntent = null;
+    _applyingPendingExternalIntent = true;
+    Future<void>(() async {
+      try {
+        await _dispatchExternalIntent(pendingIntent);
+      } finally {
+        _applyingPendingExternalIntent = false;
+      }
+    });
+  }
+
+  Future<void> _dispatchExternalIntent(AppLaunchIntent intent) async {
     await _persistIntentScenario(intent);
 
     switch (intent.destination) {

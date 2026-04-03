@@ -46,7 +46,6 @@ class AudioLanguagePackManagerService
   static const List<AudioLanguage> _catalog = <AudioLanguage>[
     AudioLanguage(localeTag: 'en', displayName: 'English', isBundled: true),
     AudioLanguage(localeTag: 'zh', displayName: '简体中文', isBundled: true),
-    AudioLanguage(localeTag: 'zh-TW', displayName: '繁體中文', isBundled: false),
   ];
 
   @override

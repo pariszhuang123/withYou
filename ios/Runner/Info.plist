@@ -43,6 +43,17 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.makinglifeeasie.withyou.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>withyou</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

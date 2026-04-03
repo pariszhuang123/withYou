@@ -5,6 +5,8 @@ import '../theme/design_tokens.dart';
 
 enum ThemedButtonSize { regular, homeTrigger, callAction }
 
+enum ThemedButtonVariant { primary, secondary }
+
 enum ThemedIconButtonSize { regular, callAction }
 
 class ThemedHeroActionButton extends StatelessWidget {
@@ -75,12 +77,14 @@ class ThemedButton extends StatelessWidget {
     required this.child,
     this.semanticLabel,
     this.size = ThemedButtonSize.regular,
+    this.variant = ThemedButtonVariant.primary,
   });
 
   final VoidCallback? onPressed;
   final Widget child;
   final String? semanticLabel;
   final ThemedButtonSize size;
+  final ThemedButtonVariant variant;
 
   @override
   Widget build(BuildContext context) {
@@ -94,12 +98,20 @@ class ThemedButton extends StatelessWidget {
       ThemedButtonSize.homeTrigger => sizes.homeTriggerSize,
       ThemedButtonSize.callAction => sizes.callActionSize,
     };
+    final backgroundColor = switch (variant) {
+      ThemedButtonVariant.primary => theme.colorScheme.primary,
+      ThemedButtonVariant.secondary => colors.surfaceSecondary,
+    };
+    final foregroundColor = switch (variant) {
+      ThemedButtonVariant.primary => theme.colorScheme.onPrimary,
+      ThemedButtonVariant.secondary => colors.textPrimary,
+    };
 
     final button = ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
         minimumSize: Size.square(targetSize),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(sizes.cornerRadius),
@@ -347,10 +359,125 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final motion = theme.appMotion;
+    if (!animated) {
+      return _AppLogoImage(size: size);
+    }
 
-    final logo = Semantics(
+    return _AnimatedAppLogo(size: size);
+  }
+}
+
+class _AnimatedAppLogo extends StatefulWidget {
+  const _AnimatedAppLogo({required this.size});
+
+  final double size;
+
+  @override
+  State<_AnimatedAppLogo> createState() => _AnimatedAppLogoState();
+}
+
+class _AnimatedAppLogoState extends State<_AnimatedAppLogo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _glow;
+  bool _hasStartedPulse = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppMotionTokens.base.avatarPulse,
+    );
+    _scale = Tween<double>(
+      begin: 0.92,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _glow = Tween<double>(
+      begin: 0.18,
+      end: 0.34,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _startPulse();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final duration = context.accessibleMotionDuration(
+      Theme.of(context).appMotion.avatarPulse,
+    );
+    if (duration == Duration.zero) {
+      _controller.stop();
+      _controller.value = 1;
+      return;
+    }
+
+    if (_controller.duration != duration) {
+      _controller.duration = duration;
+    }
+    _startPulse();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.accessibleMotionDuration(
+          Theme.of(context).appMotion.avatarPulse,
+        ) ==
+        Duration.zero) {
+      return _AppLogoImage(size: widget.size);
+    }
+
+    return ScaleTransition(
+      scale: _scale,
+      child: AnimatedBuilder(
+        animation: _glow,
+        child: _AppLogoImage(size: widget.size),
+        builder: (context, child) => DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: _glow.value),
+                blurRadius: widget.size * 0.22,
+                spreadRadius: widget.size * 0.05,
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(widget.size * 0.08),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _startPulse() {
+    if (_hasStartedPulse || _controller.isAnimating) {
+      return;
+    }
+    _hasStartedPulse = true;
+    _controller.repeat(reverse: true, count: 6);
+  }
+}
+
+class _AppLogoImage extends StatelessWidget {
+  const _AppLogoImage({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
       label: 'withYou app logo',
       image: true,
       child: SizedBox(
@@ -358,16 +485,6 @@ class AppLogo extends StatelessWidget {
         height: size,
         child: SvgPicture.asset('assets/logos/app_logo.svg'),
       ),
-    );
-
-    if (!animated) {
-      return logo;
-    }
-
-    return AnimatedScale(
-      scale: 1.03,
-      duration: context.accessibleMotionDuration(motion.avatarPulse),
-      child: logo,
     );
   }
 }

@@ -84,6 +84,61 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsSectionHelper => '柔性牵引和快速脱身场景依赖后续来电通知。';
 
   @override
+  String get homeTriggerHint => '点击标志即可开始';
+
+  @override
+  String get homeStartCallSemanticLabel => '开始当前支援来电';
+
+  @override
+  String get upgradeToPremium => '升级到高级版';
+
+  @override
+  String get premiumActive => '高级版已启用';
+
+  @override
+  String get premiumActiveMessage => '高级版已启用。你可以使用全部功能。';
+
+  @override
+  String get paywallTitle => '升级到高级版';
+
+  @override
+  String get paywallHeadline => '解锁柔性支援和快速支援的后续来电';
+
+  @override
+  String get paywallBody =>
+      '当你被困住时，可获得更多支援：柔性支援的后续来电会持续制造打断，快速支援的后续来电能帮助你更快脱身，主屏幕小组件还能让你一键触发来电。';
+
+  @override
+  String get paywallStoreNote => '高级版会让柔性支援、快速支援和小组件支援在你需要时随时可用。';
+
+  @override
+  String get paywallSeePrice => '升级到高级版';
+
+  @override
+  String get paywallRestore => '恢复购买';
+
+  @override
+  String get paywallRestoreFailed => '没有恢复到高级版购买记录。';
+
+  @override
+  String get paywallBenefitSocialPullTitle => '柔性支援';
+
+  @override
+  String get paywallBenefitSocialPullBody => '先触发一通电话，再用两通后续来电持续制造打断。';
+
+  @override
+  String get paywallBenefitExitPressureTitle => '快速支援';
+
+  @override
+  String get paywallBenefitExitPressureBody => '当你想更快脱身时，可使用更紧凑的后续来电节奏。';
+
+  @override
+  String get paywallBenefitWidgetTitle => '主屏幕小组件';
+
+  @override
+  String get paywallBenefitWidgetBody => '在你需要时，从主屏幕一键触发所选的支援来电。';
+
+  @override
   String get notificationFollowUpBody => '点按即可接听你的支援来电。';
 
   @override

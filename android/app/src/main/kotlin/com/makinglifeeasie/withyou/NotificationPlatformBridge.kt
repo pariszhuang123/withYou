@@ -259,10 +259,10 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
             putExtra(extraBody, body)
             putExtra(extraFireAtEpochMs, fireAtEpochMs)
         }
-        alarmManager(context).setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            fireAtEpochMs,
-            PendingIntent.getBroadcast(
+        scheduleAlarm(
+            context = context,
+            triggerAtMillis = fireAtEpochMs,
+            operation = PendingIntent.getBroadcast(
                 context,
                 showRequestCode(sessionId, stage),
                 intent,
@@ -315,10 +315,10 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
             putExtra(extraNotificationId, notificationId)
             putExtra(extraFireAtEpochMs, fireAtEpochMs)
         }
-        alarmManager(context).setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + 120_000L,
-            PendingIntent.getBroadcast(
+        scheduleAlarm(
+            context = context,
+            triggerAtMillis = System.currentTimeMillis() + 120_000L,
+            operation = PendingIntent.getBroadcast(
                 context,
                 missedRequestCode(sessionId, stage),
                 missedIntent,
@@ -389,6 +389,28 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
 
     private fun alarmManager(context: Context): AlarmManager {
         return context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    }
+
+    private fun scheduleAlarm(
+        context: Context,
+        triggerAtMillis: Long,
+        operation: PendingIntent,
+    ) {
+        val alarmManager = alarmManager(context)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                operation,
+            )
+            return
+        }
+
+        alarmManager.set(
+            AlarmManager.RTC_WAKEUP,
+            triggerAtMillis,
+            operation,
+        )
     }
 
     private fun showRequestCode(sessionId: String, stage: Int): Int {
