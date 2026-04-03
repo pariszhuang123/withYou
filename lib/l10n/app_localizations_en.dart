@@ -63,4 +63,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get audioLanguageFallbackHint =>
       'If the selected language is not ready offline, playback falls back to available local Chinese, then English.';
+
+  @override
+  String get notificationsSectionTitle => 'Notifications';
+
+  @override
+  String get notificationsSectionEnabled =>
+      'Follow-up call notifications are on.';
+
+  @override
+  String get notificationsSectionNeedsPermission =>
+      'Follow-up calls need system notifications turned on.';
+
+  @override
+  String get notificationsSectionUnavailable =>
+      'Notifications are unavailable on this device.';
+
+  @override
+  String get notificationsSectionTurnOn => 'Turn on notifications';
+
+  @override
+  String get notificationsSectionManage => 'Open system settings';
+
+  @override
+  String get notificationsSectionHelper =>
+      'Steady and urgent scenarios depend on follow-up notifications.';
+
+  @override
+  String get notificationFollowUpBody => 'Tap to answer your support call.';
+
+  @override
+  String get callerNamePresence => 'Tommy';
+
+  @override
+  String get callerNameSocialPull => 'Lily';
+
+  @override
+  String get callerNameExitPressure => 'Zack';
 }

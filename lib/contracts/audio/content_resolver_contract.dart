@@ -13,7 +13,16 @@ class AudioContentDescriptor {
 }
 
 abstract class ContentResolverContract {
-  String resolveCallerName(Scenario scenario);
+  String resolveCallerName({
+    required Scenario scenario,
+    required String localeTag,
+  });
+
+  String resolveFollowUpNotificationBody({
+    required Scenario scenario,
+    required int stage,
+    required String localeTag,
+  });
 
   AudioContentDescriptor resolveAudioContent({
     required Scenario scenario,
@@ -27,4 +36,6 @@ abstract class ContentResolverContract {
     required Scenario scenario,
     required int stage,
   });
+
+  String resolveBundledRingtoneAssetPath();
 }

@@ -19,4 +19,15 @@ class MainActivity : FlutterActivity() {
         setIntent(intent)
         NotificationPlatformBridge.handleLaunchIntent(this, intent)
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (NotificationPlatformBridge.handlePermissionResult(requestCode, grantResults)) {
+            return
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 }

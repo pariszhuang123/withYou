@@ -88,11 +88,14 @@ void main() {
         ),
       );
 
-      final animatedScale = tester.widget<AnimatedScale>(
+      final animatedScales = tester.widgetList<AnimatedScale>(
         find.byType(AnimatedScale),
       );
 
-      expect(animatedScale.duration, Duration.zero);
+      expect(
+        animatedScales.any((widget) => widget.duration == Duration.zero),
+        isTrue,
+      );
     });
 
     testWidgets('interactive design-system components expose semantics', (

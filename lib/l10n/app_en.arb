@@ -16,5 +16,16 @@
   "audioLanguageFailed": "Download failed",
   "audioLanguageDownload": "Download",
   "audioLanguageSelected": "Selected",
-  "audioLanguageFallbackHint": "If the selected language is not ready offline, playback falls back to available local Chinese, then English."
+  "audioLanguageFallbackHint": "If the selected language is not ready offline, playback falls back to available local Chinese, then English.",
+  "notificationsSectionTitle": "Notifications",
+  "notificationsSectionEnabled": "Follow-up call notifications are on.",
+  "notificationsSectionNeedsPermission": "Follow-up calls need system notifications turned on.",
+  "notificationsSectionUnavailable": "Notifications are unavailable on this device.",
+  "notificationsSectionTurnOn": "Turn on notifications",
+  "notificationsSectionManage": "Open system settings",
+  "notificationsSectionHelper": "Steady and urgent scenarios depend on follow-up notifications.",
+  "notificationFollowUpBody": "Tap to answer your support call.",
+  "callerNamePresence": "Tommy",
+  "callerNameSocialPull": "Lily",
+  "callerNameExitPressure": "Zack"
 }

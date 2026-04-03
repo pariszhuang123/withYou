@@ -8,9 +8,11 @@ import 'package:with_you/config/app_environment.dart';
 import 'package:with_you/contracts/app_contracts.dart';
 import 'package:with_you/contracts/audio_contracts.dart';
 import 'package:with_you/contracts/call_flow_contracts.dart';
+import 'package:with_you/contracts/commerce_contracts.dart';
 import 'package:with_you/contracts/readiness_contracts.dart';
 import 'package:with_you/models/audio_language.dart';
 import 'package:with_you/models/playable_audio_source.dart';
+import 'package:with_you/services/app_router_service.dart';
 
 class _TestAppLocaleResolverContract implements AppLocaleResolverContract {
   @override
@@ -45,8 +47,17 @@ class _TestAudioLanguagePackManagerContract
     return <AudioLanguageAvailability>[
       AudioLanguageAvailability(
         language: const AudioLanguage(
+          localeTag: 'en',
+          displayName: 'English',
+          isBundled: true,
+        ),
+        status: AudioLanguagePackStatus.downloaded,
+        isSelected: selectedLocale == 'en',
+      ),
+      AudioLanguageAvailability(
+        language: const AudioLanguage(
           localeTag: 'zh',
-          displayName: 'Traditional Chinese',
+          displayName: 'Simplified Chinese',
           isBundled: true,
         ),
         status: AudioLanguagePackStatus.downloaded,
@@ -134,22 +145,27 @@ class _TestAppStateContract implements AppStateContract {
 }
 
 class _TestSceneReadinessContract implements SceneReadinessContract {
+  _TestSceneReadinessContract([Map<Scenario, SceneReadinessState>? states])
+    : _states =
+          states ??
+          const <Scenario, SceneReadinessState>{
+            Scenario.presence: SceneReadinessState.ready,
+            Scenario.socialPull: SceneReadinessState.lockedPremium,
+            Scenario.exitPressure: SceneReadinessState.needsNotification,
+          };
+
+  final Map<Scenario, SceneReadinessState> _states;
+
   @override
   Future<List<SceneReadinessSnapshot>> getAllReadiness() async {
-    return const <SceneReadinessSnapshot>[
-      SceneReadinessSnapshot(
-        scenario: Scenario.presence,
-        state: SceneReadinessState.ready,
-      ),
-      SceneReadinessSnapshot(
-        scenario: Scenario.socialPull,
-        state: SceneReadinessState.lockedPremium,
-      ),
-      SceneReadinessSnapshot(
-        scenario: Scenario.exitPressure,
-        state: SceneReadinessState.needsNotification,
-      ),
-    ];
+    return Scenario.values
+        .map(
+          (scenario) => SceneReadinessSnapshot(
+            scenario: scenario,
+            state: _states[scenario] ?? SceneReadinessState.ready,
+          ),
+        )
+        .toList(growable: false);
   }
 
   @override
@@ -160,6 +176,115 @@ class _TestSceneReadinessContract implements SceneReadinessContract {
   }
 }
 
+class _DerivedSceneReadinessContract implements SceneReadinessContract {
+  const _DerivedSceneReadinessContract({
+    required this.appState,
+    required this.notificationReadiness,
+  });
+
+  final _TestAppStateContract appState;
+  final _TestNotificationReadinessContract notificationReadiness;
+
+  @override
+  Future<List<SceneReadinessSnapshot>> getAllReadiness() async {
+    return Scenario.values
+        .map(
+          (scenario) => SceneReadinessSnapshot(
+            scenario: scenario,
+            state: _stateFor(scenario),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<SceneReadinessSnapshot> getReadiness(Scenario scenario) async {
+    return SceneReadinessSnapshot(
+      scenario: scenario,
+      state: _stateFor(scenario),
+    );
+  }
+
+  SceneReadinessState _stateFor(Scenario scenario) {
+    if (scenario == Scenario.presence) {
+      return SceneReadinessState.ready;
+    }
+    if (notificationReadiness.state != NotificationReadinessState.ready) {
+      return SceneReadinessState.needsNotification;
+    }
+    if (!appState.premiumAccess) {
+      return SceneReadinessState.lockedPremium;
+    }
+    return SceneReadinessState.ready;
+  }
+}
+
+class _TestNotificationReadinessContract
+    implements NotificationReadinessContract {
+  NotificationReadinessState state = NotificationReadinessState.ready;
+  NotificationReadinessState? stateAfterRequest;
+  int requestCount = 0;
+  int openSettingsCount = 0;
+
+  @override
+  Future<NotificationReadinessState> getReadiness() async => state;
+
+  @override
+  Future<NotificationReadinessState> requestPermission() async {
+    requestCount++;
+    if (stateAfterRequest != null) {
+      state = stateAfterRequest!;
+    }
+    return state;
+  }
+
+  @override
+  Future<void> openSystemSettings() async {
+    openSettingsCount++;
+  }
+}
+
+class _TestPremiumAccessContract implements PremiumAccessContract {
+  _TestPremiumAccessContract(this._appStateContract);
+
+  final _TestAppStateContract _appStateContract;
+  int restoreCount = 0;
+
+  @override
+  Future<PremiumAccessState> getAccessState() async {
+    return _appStateContract.premiumAccess
+        ? PremiumAccessState.active
+        : PremiumAccessState.inactive;
+  }
+
+  @override
+  Future<void> recordPurchase() async {
+    _appStateContract.premiumAccess = true;
+  }
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  Future<void> restorePurchases() async {
+    restoreCount++;
+  }
+}
+
+class _TestPaywallContract implements PaywallContract {
+  _TestPaywallContract({this.decision = PaywallDecision.showFeatureGate});
+
+  final PaywallDecision decision;
+
+  @override
+  Future<PaywallDecision> evaluate({required PaywallSurface surface}) async {
+    return decision;
+  }
+
+  @override
+  Future<void> recordDismissed({required PaywallSurface surface}) async {}
+}
+
 class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
   final _controller = StreamController<CallFlowSnapshot>.broadcast();
 
@@ -168,9 +293,6 @@ class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
 
   @override
   Stream<CallFlowSnapshot> get snapshotStream => _controller.stream;
-
-  @override
-  Future<void> initialize() async {}
 
   @override
   Future<void> acceptCurrentStage() async {
@@ -220,6 +342,31 @@ class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
   }
 
   @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  }) async {
+    currentSnapshot = CallFlowSnapshot(
+      flowState: FakeCallState.ringing,
+      scenario: scenario,
+      currentStage: stage,
+      callerName: switch (scenario) {
+        Scenario.presence => 'Xiao Chen',
+        Scenario.socialPull => 'Xiao Li',
+        Scenario.exitPressure => 'Xiao Zhang',
+      },
+      sessionId: sessionId,
+      followUpStage: null,
+      followUpReadyAt: null,
+    );
+    _controller.add(currentSnapshot);
+  }
+
+  @override
   Future<void> startFlow(Scenario scenario) async {
     currentSnapshot = CallFlowSnapshot(
       flowState: FakeCallState.ringing,
@@ -242,86 +389,428 @@ class _TestCallFlowCoordinatorContract implements CallFlowCoordinatorContract {
 }
 
 void main() {
-  testWidgets('dev app shows development metadata and selected readiness', (
+  WithYouApp buildApp({
+    required _TestAudioLanguagePackManagerContract manager,
+    required _TestCallFlowCoordinatorContract coordinator,
+    required _TestAppStateContract appState,
+    required _TestNotificationReadinessContract notificationReadiness,
+    required _TestPremiumAccessContract premiumAccess,
+    SceneReadinessContract? sceneReadiness,
+    _TestPaywallContract? paywallContract,
+  }) {
+    final appRouterContract = AppRouterService(
+      appName: 'With You',
+      appStateContract: appState,
+      callTemplateContract: _TestCallTemplateContract(),
+      notificationReadinessContract: notificationReadiness,
+      premiumAccessContract: premiumAccess,
+      paywallContract: paywallContract ?? _TestPaywallContract(),
+    );
+
+    return WithYouApp(
+      config: AppConfig(environment: AppEnvironment.prod),
+      appLocaleResolverContract: _TestAppLocaleResolverContract(),
+      appStateContract: appState,
+      appRouterContract: appRouterContract,
+      audioLanguagePackManagerContract: manager,
+      callFlowCoordinatorContract: coordinator,
+      sceneReadinessContract: sceneReadiness ?? _TestSceneReadinessContract(),
+    );
+  }
+
+  testWidgets('home screen removes environment metadata and opens settings', (
     tester,
   ) async {
     final manager = _TestAudioLanguagePackManagerContract();
     final coordinator = _TestCallFlowCoordinatorContract();
     final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
     await tester.pumpWidget(
-      WithYouApp(
-        config: AppConfig(environment: AppEnvironment.dev),
-        appLocaleResolverContract: _TestAppLocaleResolverContract(),
-        appStateContract: appState,
-        audioLanguagePackManagerContract: manager,
-        callFlowCoordinatorContract: coordinator,
-        callTemplateContract: _TestCallTemplateContract(),
-        sceneReadinessContract: _TestSceneReadinessContract(),
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('With You'), findsNWidgets(2));
-    expect(find.text('Release channel: development'), findsOneWidget);
-    expect(find.text('APP_ENV=dev'), findsOneWidget);
+    expect(find.text('Release channel: development'), findsNothing);
+    expect(find.text('APP_ENV=dev'), findsNothing);
+    expect(find.text('Choose support style'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Open settings'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Audio language'), findsOneWidget);
-    expect(find.text('Selected scene: Presence · Ready'), findsOneWidget);
-    expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+    expect(find.text('Upgrade to premium'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Follow-up call notifications are on.'), findsOneWidget);
   });
 
-  testWidgets('download action updates audio language readiness', (
+  testWidgets(
+    'settings notification row opens system settings when already enabled',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract()
+        ..state = NotificationReadinessState.ready;
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Open settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Open system settings').first);
+      await tester.pumpAndSettle();
+
+      expect(notificationReadiness.openSettingsCount, 1);
+      expect(notificationReadiness.requestCount, 0);
+    },
+  );
+
+  testWidgets(
+    'settings notification row requests permission then opens system settings when still off',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract()
+        ..state = NotificationReadinessState.needsPermission
+        ..stateAfterRequest = NotificationReadinessState.needsPermission;
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Open settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Turn on notifications').first);
+      await tester.pumpAndSettle();
+
+      expect(notificationReadiness.requestCount, 1);
+      expect(notificationReadiness.openSettingsCount, 1);
+    },
+  );
+
+  testWidgets('selecting a downloadable language from settings downloads it', (
     tester,
   ) async {
     final manager = _TestAudioLanguagePackManagerContract();
     final coordinator = _TestCallFlowCoordinatorContract();
     final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
     await tester.pumpWidget(
-      WithYouApp(
-        config: AppConfig(environment: AppEnvironment.prod),
-        appLocaleResolverContract: _TestAppLocaleResolverContract(),
-        appStateContract: appState,
-        audioLanguagePackManagerContract: manager,
-        callFlowCoordinatorContract: coordinator,
-        callTemplateContract: _TestCallTemplateContract(),
-        sceneReadinessContract: _TestSceneReadinessContract(),
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
       ),
     );
     await tester.pumpAndSettle();
 
-    final downloadButton = find.byIcon(Icons.download_outlined);
-    await tester.ensureVisible(downloadButton);
-    await tester.tap(downloadButton);
+    await tester.tap(find.bySemanticsLabel('Open settings'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Ready offline'), findsNWidgets(2));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Traditional Chinese').last);
+    await tester.pumpAndSettle();
+
     expect(manager.downloaded, isTrue);
   });
 
-  testWidgets('start call action enters the placeholder call screen', (
+  testWidgets('starting the gentle scenario opens the call screen', (
     tester,
   ) async {
     final manager = _TestAudioLanguagePackManagerContract();
     final coordinator = _TestCallFlowCoordinatorContract();
     final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
     await tester.pumpWidget(
-      WithYouApp(
-        config: AppConfig(environment: AppEnvironment.prod),
-        appLocaleResolverContract: _TestAppLocaleResolverContract(),
-        appStateContract: appState,
-        audioLanguagePackManagerContract: manager,
-        callFlowCoordinatorContract: coordinator,
-        callTemplateContract: _TestCallTemplateContract(),
-        sceneReadinessContract: _TestSceneReadinessContract(),
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
       ),
     );
     await tester.pumpAndSettle();
 
-    final startCallButton = find.bySemanticsLabel('Start support call');
-    await tester.ensureVisible(startCallButton);
-    await tester.tap(startCallButton);
+    await tester.tap(find.bySemanticsLabel('Start selected support call'));
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
     expect(find.text('Xiao Chen'), findsOneWidget);
+    expect(find.bySemanticsLabel('Caller avatar'), findsNothing);
+  });
+
+  testWidgets(
+    'locked premium scenarios open the paywall and can unlock premium',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract();
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+          sceneReadiness: _DerivedSceneReadinessContract(
+            appState: appState,
+            notificationReadiness: notificationReadiness,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Steady'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unlock stronger support options'), findsOneWidget);
+
+      final purchaseButton = find.text('See price in store');
+      await tester.ensureVisible(purchaseButton);
+      await tester.tap(purchaseButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Start selected support call'));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
+      expect(find.text('Xiao Li'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'follow-up scenario selection checks notifications then paywall',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract()
+        ..state = NotificationReadinessState.needsPermission
+        ..stateAfterRequest = NotificationReadinessState.ready;
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+          sceneReadiness: _DerivedSceneReadinessContract(
+            appState: appState,
+            notificationReadiness: notificationReadiness,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Urgent'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Turn on notifications'), findsOneWidget);
+
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(notificationReadiness.requestCount, 1);
+      expect(find.text('Unlock stronger support options'), findsOneWidget);
+
+      final purchaseButton = find.text('See price in store');
+      await tester.ensureVisible(purchaseButton);
+      await tester.tap(purchaseButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Start selected support call'));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
+      expect(find.text('Xiao Zhang'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'rejecting notification for urgent bounces selection back to gentle',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract()
+        ..state = NotificationReadinessState.needsPermission;
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+          sceneReadiness: _DerivedSceneReadinessContract(
+            appState: appState,
+            notificationReadiness: notificationReadiness,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Urgent'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Turn on notifications'), findsOneWidget);
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Start selected support call'));
+      await tester.pumpAndSettle();
+
+      expect(notificationReadiness.requestCount, 0);
+      expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
+      expect(find.text('Xiao Chen'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'dismissing paywall for steady bounces selection back to gentle',
+    (tester) async {
+      final manager = _TestAudioLanguagePackManagerContract();
+      final coordinator = _TestCallFlowCoordinatorContract();
+      final appState = _TestAppStateContract();
+      final notificationReadiness = _TestNotificationReadinessContract();
+      final premiumAccess = _TestPremiumAccessContract(appState);
+
+      await tester.pumpWidget(
+        buildApp(
+          manager: manager,
+          coordinator: coordinator,
+          appState: appState,
+          notificationReadiness: notificationReadiness,
+          premiumAccess: premiumAccess,
+          sceneReadiness: _DerivedSceneReadinessContract(
+            appState: appState,
+            notificationReadiness: notificationReadiness,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Steady'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unlock stronger support options'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Start selected support call'));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Accept support call'), findsOneWidget);
+      expect(find.text('Xiao Chen'), findsOneWidget);
+    },
+  );
+
+  testWidgets('restore purchase path stays visible when nothing is restored', (
+    tester,
+  ) async {
+    final manager = _TestAudioLanguagePackManagerContract();
+    final coordinator = _TestCallFlowCoordinatorContract();
+    final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
+    await tester.pumpWidget(
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Steady'));
+    await tester.pumpAndSettle();
+    final restoreButton = find.text('Restore purchase');
+    await tester.ensureVisible(restoreButton);
+    await tester.tap(restoreButton);
+    await tester.pumpAndSettle();
+
+    expect(premiumAccess.restoreCount, 1);
+    expect(find.text('No premium purchase was restored.'), findsOneWidget);
+  });
+
+  testWidgets('settings premium button confirms active entitlement', (
+    tester,
+  ) async {
+    final manager = _TestAudioLanguagePackManagerContract();
+    final coordinator = _TestCallFlowCoordinatorContract();
+    final appState = _TestAppStateContract()..premiumAccess = true;
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
+    await tester.pumpWidget(
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
+        sceneReadiness:
+            _TestSceneReadinessContract(const <Scenario, SceneReadinessState>{
+              Scenario.presence: SceneReadinessState.ready,
+              Scenario.socialPull: SceneReadinessState.ready,
+              Scenario.exitPressure: SceneReadinessState.ready,
+            }),
+        paywallContract: _TestPaywallContract(decision: PaywallDecision.hidden),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Open settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Premium active'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Premium is active. You can use all features.'),
+      findsOneWidget,
+    );
   });
 }

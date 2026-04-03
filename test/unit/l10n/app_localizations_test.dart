@@ -12,6 +12,9 @@ void main() {
     expect(localizations, isA<AppLocalizationsEn>());
     expect(localizations.homeSubtitle, 'Always with you');
     expect(localizations.audioLanguageSectionTitle, 'Audio language');
+    expect(localizations.callerNamePresence, 'Tommy');
+    expect(localizations.callerNameSocialPull, 'Lily');
+    expect(localizations.callerNameExitPressure, 'Zack');
   });
 
   test('lookupAppLocalizations resolves Simplified Chinese strings', () {
@@ -20,6 +23,9 @@ void main() {
     expect(localizations, isA<AppLocalizationsZh>());
     expect(localizations.homeSubtitle, '随时为你');
     expect(localizations.audioLanguageSectionTitle, '音频语言');
+    expect(localizations.callerNamePresence, '小陈');
+    expect(localizations.callerNameSocialPull, '小李');
+    expect(localizations.callerNameExitPressure, '小张');
   });
 
   test('lookupAppLocalizations resolves Traditional Chinese strings', () {
@@ -28,17 +34,25 @@ void main() {
     expect(localizations, isA<AppLocalizationsZhTw>());
     expect(localizations.homeSubtitle, '隨時為你');
     expect(localizations.audioLanguageSectionTitle, '音訊語言');
+    expect(localizations.callerNamePresence, '小陳');
+    expect(localizations.callerNameSocialPull, '小李');
+    expect(localizations.callerNameExitPressure, '小張');
   });
 
   test('delegate reports support and loads localized instances', () async {
     expect(AppLocalizations.delegate.isSupported(const Locale('en')), isTrue);
     expect(AppLocalizations.delegate.isSupported(const Locale('zh')), isTrue);
-    expect(AppLocalizations.delegate.isSupported(const Locale('zh', 'TW')), isTrue);
+    expect(
+      AppLocalizations.delegate.isSupported(const Locale('zh', 'TW')),
+      isTrue,
+    );
     expect(AppLocalizations.delegate.isSupported(const Locale('ja')), isFalse);
 
     final english = await AppLocalizations.delegate.load(const Locale('en'));
     final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
-    final chineseTw = await AppLocalizations.delegate.load(const Locale('zh', 'TW'));
+    final chineseTw = await AppLocalizations.delegate.load(
+      const Locale('zh', 'TW'),
+    );
 
     expect(english.localeName, 'en');
     expect(chinese.localeName, 'zh');

@@ -16,6 +16,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     required this.textSecondary,
     required this.borderSubtle,
     required this.focusRing,
+    required this.brandColor,
   });
 
   final Color safeAction;
@@ -29,6 +30,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
   final Color textSecondary;
   final Color borderSubtle;
   final Color focusRing;
+  final Color brandColor;
 
   static const AppColorTokens light = AppColorTokens(
     safeAction: Color(0xFF1F6B45),
@@ -42,6 +44,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     textSecondary: Color(0xFF41515D),
     borderSubtle: Color(0xFFB8C4CD),
     focusRing: Color(0xFF0D6EFD),
+    brandColor: Color(0xFF2D8659),
   );
 
   static const AppColorTokens dark = AppColorTokens(
@@ -56,6 +59,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     textSecondary: Color(0xFFC5CCD2),
     borderSubtle: Color(0xFF54606A),
     focusRing: Color(0xFF9ACBFF),
+    brandColor: Color(0xFF2D8659),
   );
 
   @override
@@ -71,6 +75,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     Color? textSecondary,
     Color? borderSubtle,
     Color? focusRing,
+    Color? brandColor,
   }) {
     return AppColorTokens(
       safeAction: safeAction ?? this.safeAction,
@@ -84,6 +89,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
       textSecondary: textSecondary ?? this.textSecondary,
       borderSubtle: borderSubtle ?? this.borderSubtle,
       focusRing: focusRing ?? this.focusRing,
+      brandColor: brandColor ?? this.brandColor,
     );
   }
 
@@ -115,6 +121,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
       borderSubtle:
           Color.lerp(borderSubtle, other.borderSubtle, t) ?? borderSubtle,
       focusRing: Color.lerp(focusRing, other.focusRing, t) ?? focusRing,
+      brandColor: Color.lerp(brandColor, other.brandColor, t) ?? brandColor,
     );
   }
 }

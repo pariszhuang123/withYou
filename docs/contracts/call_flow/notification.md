@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Version | `v0.1` |
+| Version | `v0.2` |
 | Status | `active` |
-| Last Updated | `2026-04-02` |
+| Last Updated | `2026-04-03` |
 | Generated | `manually curated` |
 | ADR | `none` |
 | Module | `call_flow` |
@@ -22,12 +22,17 @@ re-entered through `onNotificationTapped(...)` and `handleMissedStage(...)`.
 abstract class NotificationContract {
   Future<bool> initialize();
 
+  Future<bool> requestPermission();
+
+  Future<void> openSystemSettings();
+
   Future<void> scheduleFollowUp({
     required String sessionId,
     required Scenario scenario,
     required int stage,
     required Duration delay,
-    required String callerName,
+    required String title,
+    required String body,
   });
 
   Future<void> cancelAll(String sessionId);
@@ -44,7 +49,10 @@ abstract class NotificationContract {
 - delay starts when the prior stage resolves
 - `cancelAll(sessionId)` clears pending follow-ups for that flow only
 - native tap and missed events are delivered back to Dart through `eventStream`
-- initialization should bind native callbacks and report whether notifications are currently enabled
+- `initialize()` should bind native callbacks and report whether notifications are currently enabled without forcing a prompt
+- `requestPermission()` should trigger the platform permission flow when the OS still allows prompting, then report the resulting enabled state
+- `openSystemSettings()` should deep-link to the app notification settings page when the OS supports it
+- notification title and body are resolved in Dart so locale-specific copy stays consistent across Android and iOS
 
 ## Implementation
 

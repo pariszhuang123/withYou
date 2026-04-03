@@ -19,12 +19,17 @@ class NotificationEvent {
 abstract class NotificationContract {
   Future<bool> initialize();
 
+  Future<bool> requestPermission();
+
+  Future<void> openSystemSettings();
+
   Future<void> scheduleFollowUp({
     required String sessionId,
     required Scenario scenario,
     required int stage,
     required Duration delay,
-    required String callerName,
+    required String title,
+    required String body,
   });
 
   Future<void> cancelAll(String sessionId);

@@ -16,5 +16,16 @@
   "audioLanguageFailed": "下载失败",
   "audioLanguageDownload": "下载",
   "audioLanguageSelected": "已选择",
-  "audioLanguageFallbackHint": "如果已选语言尚未离线就绪，播放会依次回退到本地可用的中文，再到英文。"
+  "audioLanguageFallbackHint": "如果已选语言尚未离线就绪，播放会依次回退到本地可用的中文，再到英文。",
+  "notificationsSectionTitle": "通知",
+  "notificationsSectionEnabled": "后续来电通知已开启。",
+  "notificationsSectionNeedsPermission": "后续来电需要在系统中开启通知。",
+  "notificationsSectionUnavailable": "此设备无法使用通知。",
+  "notificationsSectionTurnOn": "开启通知",
+  "notificationsSectionManage": "打开系统设置",
+  "notificationsSectionHelper": "柔性牵引和快速脱身场景依赖后续来电通知。",
+  "notificationFollowUpBody": "点按即可接听你的支援来电。",
+  "callerNamePresence": "小陈",
+  "callerNameSocialPull": "小李",
+  "callerNameExitPressure": "小张"
 }

@@ -18,6 +18,15 @@ class NotificationReadinessService implements NotificationReadinessContract {
 
   @override
   Future<NotificationReadinessState> requestPermission() {
-    return getReadiness();
+    return _notificationContract.requestPermission().then(
+      (notificationsEnabled) => notificationsEnabled
+          ? NotificationReadinessState.ready
+          : NotificationReadinessState.needsPermission,
+    );
+  }
+
+  @override
+  Future<void> openSystemSettings() {
+    return _notificationContract.openSystemSettings();
   }
 }

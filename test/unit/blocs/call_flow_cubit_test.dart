@@ -123,6 +123,28 @@ class _TestCoordinatorContract implements CallFlowCoordinatorContract {
   }
 
   @override
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  }) async {
+    currentSnapshot = CallFlowSnapshot(
+      flowState: FakeCallState.ringing,
+      scenario: scenario,
+      currentStage: stage,
+      callerName: switch (scenario) {
+        Scenario.presence => 'Xiao Chen',
+        Scenario.socialPull => 'Xiao Li',
+        Scenario.exitPressure => 'Xiao Zhang',
+      },
+      sessionId: sessionId,
+      followUpStage: null,
+      followUpReadyAt: null,
+    );
+    _controller.add(currentSnapshot);
+  }
+
+  @override
   Future<void> startFlow(Scenario scenario) async {
     currentSnapshot = CallFlowSnapshot(
       flowState: FakeCallState.ringing,
@@ -181,6 +203,33 @@ void main() {
     },
   );
 
+  test('hydrates immediately from the coordinator current snapshot', () async {
+    final coordinator = _TestCoordinatorContract()
+      ..currentSnapshot = const CallFlowSnapshot(
+        flowState: FakeCallState.ringing,
+        scenario: Scenario.presence,
+        currentStage: 1,
+        callerName: 'Taylor',
+        sessionId: 'session-1',
+        followUpStage: null,
+        followUpReadyAt: null,
+      );
+    final cubit = CallFlowCubit(
+      coordinator: coordinator,
+      appStateContract: _TestAppStateContract(),
+      sceneReadinessContract: _TestSceneReadinessContract(),
+    );
+
+    await Future<void>.delayed(Duration.zero);
+
+    expect(cubit.state.flowState, FakeCallState.ringing);
+    expect(cubit.state.currentStage, 1);
+    expect(cubit.state.callerName, 'Taylor');
+    expect(cubit.state.sessionId, 'session-1');
+
+    await cubit.close();
+  });
+
   test(
     'triggerFollowUp re-enters the flow when the placeholder follow-up is ready',
     () async {
@@ -205,7 +254,7 @@ void main() {
     },
   );
 
-  test('locked or unarmed scenarios fall back to presence on launch', () async {
+  test('locked or unarmed scenarios stay blocked on launch', () async {
     final coordinator = _TestCoordinatorContract();
     final cubit = CallFlowCubit(
       coordinator: coordinator,
@@ -219,8 +268,9 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(cubit.state.selectedScenario, Scenario.socialPull);
-    expect(cubit.state.activeScenario, Scenario.presence);
-    expect(cubit.state.callerName, 'Xiao Chen');
+    expect(cubit.state.activeScenario, isNull);
+    expect(cubit.state.callerName, isNull);
+    expect(cubit.state.flowState, FakeCallState.idle);
 
     await cubit.close();
   });

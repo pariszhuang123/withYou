@@ -56,6 +56,17 @@ abstract class AppLocalizations {
   String get audioLanguageDownload;
   String get audioLanguageSelected;
   String get audioLanguageFallbackHint;
+  String get notificationsSectionTitle;
+  String get notificationsSectionEnabled;
+  String get notificationsSectionNeedsPermission;
+  String get notificationsSectionUnavailable;
+  String get notificationsSectionTurnOn;
+  String get notificationsSectionManage;
+  String get notificationsSectionHelper;
+  String get notificationFollowUpBody;
+  String get callerNamePresence;
+  String get callerNameSocialPull;
+  String get callerNameExitPressure;
 }
 
 class _AppLocalizationsDelegate

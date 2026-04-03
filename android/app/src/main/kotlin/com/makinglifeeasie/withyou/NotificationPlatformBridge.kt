@@ -10,7 +10,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,16 +31,21 @@ private const val launchAction = "com.makinglifeeasie.withyou.NOTIFICATION_TAPPE
 private const val extraSessionId = "sessionId"
 private const val extraScenario = "scenario"
 private const val extraStage = "stage"
-private const val extraCallerName = "callerName"
+private const val extraTitle = "title"
+private const val extraBody = "body"
 private const val extraAction = "action"
 private const val extraNotificationId = "notificationId"
 private const val extraFireAtEpochMs = "fireAtEpochMs"
+private const val notificationPermissionRequestCode = 44031
 
 object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
     private var applicationContext: Context? = null
+    private var activity: Activity? = null
     private var eventSink: EventChannel.EventSink? = null
+    private var pendingPermissionResult: MethodChannel.Result? = null
 
     fun configure(activity: Activity, flutterEngine: FlutterEngine) {
+        this.activity = activity
         applicationContext = activity.applicationContext
 
         MethodChannel(
@@ -66,6 +73,13 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
                 flushPendingEvents(context)
                 result.success(notificationsEnabled(context))
             }
+            "requestPermission" -> {
+                requestPermission(result)
+            }
+            "openSystemSettings" -> {
+                openSystemSettings(context)
+                result.success(null)
+            }
             "scheduleFollowUp" -> {
                 scheduleFollowUp(context, call.arguments as Map<*, *>)
                 result.success(null)
@@ -86,6 +100,28 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
 
     override fun onCancel(arguments: Any?) {
         eventSink = null
+    }
+
+    fun handlePermissionResult(
+        requestCode: Int,
+        grantResults: IntArray,
+    ): Boolean {
+        if (requestCode != notificationPermissionRequestCode) {
+            return false
+        }
+
+        val result = pendingPermissionResult ?: return true
+        pendingPermissionResult = null
+        val context = applicationContext
+        if (context == null) {
+            result.success(false)
+            return true
+        }
+
+        val granted = grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        result.success(granted && notificationsEnabled(context))
+        return true
     }
 
     fun handleLaunchIntent(context: Context, intent: Intent?) {
@@ -175,19 +211,52 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
         return true
     }
 
+    private fun requestPermission(result: MethodChannel.Result) {
+        val context = applicationContext
+        val currentActivity = activity
+        if (context == null || currentActivity == null) {
+            result.success(false)
+            return
+        }
+
+        createNotificationChannel(context)
+        flushPendingEvents(context)
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            result.success(notificationsEnabled(context))
+            return
+        }
+
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            result.success(notificationsEnabled(context))
+            return
+        }
+
+        pendingPermissionResult?.success(false)
+        pendingPermissionResult = result
+        currentActivity.requestPermissions(
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            notificationPermissionRequestCode,
+        )
+    }
+
     private fun scheduleFollowUp(context: Context, arguments: Map<*, *>) {
         val sessionId = arguments[extraSessionId] as String
         val scenario = arguments[extraScenario] as String
         val stage = arguments[extraStage] as Int
         val delaySeconds = arguments["delaySeconds"] as Int
-        val callerName = arguments[extraCallerName] as String
+        val title = arguments[extraTitle] as String
+        val body = arguments[extraBody] as String
         val fireAtEpochMs = System.currentTimeMillis() + (delaySeconds * 1000L)
 
         val intent = Intent(context, FollowUpNotificationReceiver::class.java).apply {
             putExtra(extraSessionId, sessionId)
             putExtra(extraScenario, scenario)
             putExtra(extraStage, stage)
-            putExtra(extraCallerName, callerName)
+            putExtra(extraTitle, title)
+            putExtra(extraBody, body)
             putExtra(extraFireAtEpochMs, fireAtEpochMs)
         }
         alarmManager(context).setExactAndAllowWhileIdle(
@@ -206,7 +275,8 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
         val sessionId = intent.getStringExtra(extraSessionId) ?: return
         val scenario = intent.getStringExtra(extraScenario) ?: return
         val stage = intent.getIntExtra(extraStage, 0)
-        val callerName = intent.getStringExtra(extraCallerName) ?: "Support call"
+        val title = intent.getStringExtra(extraTitle) ?: "Support call"
+        val body = intent.getStringExtra(extraBody) ?: "Follow-up support call"
         val fireAtEpochMs = intent.getLongExtra(extraFireAtEpochMs, System.currentTimeMillis())
         val notificationId = notificationId(sessionId, stage)
 
@@ -228,8 +298,8 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
 
         val notification = NotificationCompat.Builder(context, notificationChannelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(callerName)
-            .setContentText("Follow-up support call")
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setAutoCancel(true)
@@ -289,6 +359,20 @@ object NotificationPlatformBridge : MethodChannel.MethodCallHandler, EventChanne
             cancelMissedAlarm(context, sessionId, stage)
             NotificationManagerCompat.from(context).cancel(notificationId(sessionId, stage))
         }
+    }
+
+    private fun openSystemSettings(context: Context) {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            }
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 
     fun cancelMissedAlarm(context: Context, sessionId: String, stage: Int) {

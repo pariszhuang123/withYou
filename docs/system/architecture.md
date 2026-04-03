@@ -44,6 +44,7 @@ truth for:
 
 - `AppLocaleResolverContract`
 - `AppStateContract`
+- `AppRouterContract`
 - `PaywallContract`
 - `PremiumAccessContract`
 - `SceneReadinessContract`
@@ -242,7 +243,10 @@ enforcement point for now.
 Current implementation adds:
 
 - `flutter_bloc` for state orchestration
+- `flutter_svg` for SVG asset rendering (logo and branding)
 - `get_it` for DI registration
+- `go_router` for declarative app routing and external launch path handling
+- `just_audio` for local ringtone and scenario clip playback
 - `path_provider` for local storage roots
 - `crypto` for checksum verification
 - `custom_lint` for repo-specific design-system linting

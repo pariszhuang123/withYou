@@ -11,11 +11,13 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
     required ContentResolverContract contentResolverContract,
     required NotificationContract notificationContract,
     required PendingFollowUpRepositoryContract pendingFollowUpRepository,
+    required String Function() localeTagProvider,
     Random? random,
   }) : _timingContract = timingContract,
        _contentResolverContract = contentResolverContract,
        _notificationContract = notificationContract,
        _pendingFollowUpRepository = pendingFollowUpRepository,
+       _localeTagProvider = localeTagProvider,
        _random = random ?? Random() {
     _stateSubscription = _timingContract.stateStream.listen(_handleFlowState);
     _notificationSubscription = _notificationContract.eventStream.listen(
@@ -27,6 +29,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
   final ContentResolverContract _contentResolverContract;
   final NotificationContract _notificationContract;
   final PendingFollowUpRepositoryContract _pendingFollowUpRepository;
+  final String Function() _localeTagProvider;
   final Random _random;
   final StreamController<CallFlowSnapshot> _snapshotController =
       StreamController<CallFlowSnapshot>.broadcast();
@@ -55,7 +58,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
       flowState: FakeCallState.ringing,
       scenario: scenario,
       currentStage: 1,
-      callerName: _contentResolverContract.resolveCallerName(scenario),
+      callerName: _resolveCallerName(scenario),
       sessionId: sessionId,
       followUpStage: null,
       followUpReadyAt: null,
@@ -63,6 +66,31 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
     _emitSnapshot();
     await _pendingFollowUpRepository.deleteBySession(sessionId);
     await _timingContract.startFlow(sessionId: sessionId, scenario: scenario);
+  }
+
+  @override
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  }) async {
+    final pending = await _findPending(sessionId, stage);
+    if (pending != null) {
+      await _pendingFollowUpRepository.savePendingFollowUp(
+        pending.copyWith(status: PendingFollowUpStatus.tapped),
+      );
+      await _pendingFollowUpRepository.deletePendingFollowUp(
+        sessionId: sessionId,
+        stage: stage,
+      );
+    }
+
+    _activeSessionId = sessionId;
+    await _timingContract.onNotificationTapped(
+      sessionId: sessionId,
+      scenario: scenario,
+      stage: stage,
+    );
   }
 
   @override
@@ -97,25 +125,11 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
   }
 
   Future<void> _handleNotificationEvent(NotificationEvent event) async {
-    final pending = await _findPending(event.sessionId, event.stage);
     switch (event.action) {
       case NotificationAction.tapped:
-        if (pending != null) {
-          await _pendingFollowUpRepository.savePendingFollowUp(
-            pending.copyWith(status: PendingFollowUpStatus.tapped),
-          );
-          await _pendingFollowUpRepository.deletePendingFollowUp(
-            sessionId: event.sessionId,
-            stage: event.stage,
-          );
-        }
-        _activeSessionId = event.sessionId;
-        await _timingContract.onNotificationTapped(
-          sessionId: event.sessionId,
-          scenario: event.scenario,
-          stage: event.stage,
-        );
+        return;
       case NotificationAction.missed:
+        final pending = await _findPending(event.sessionId, event.stage);
         if (pending != null) {
           await _markMissedAndAdvance(pending);
           return;
@@ -136,9 +150,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
       flowState: flowState,
       scenario: scenario,
       currentStage: _timingContract.currentStage,
-      callerName: scenario == null
-          ? null
-          : _contentResolverContract.resolveCallerName(scenario),
+      callerName: scenario == null ? null : _resolveCallerName(scenario),
       sessionId: _activeSessionId ?? _currentSnapshot.sessionId,
       followUpStage: _timingContract.pendingFollowUpStage,
       followUpReadyAt: _timingContract.nextStageReadyAt,
@@ -170,9 +182,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
           stage: followUpStage,
           scheduledAtUtc: followUpReadyAt.toUtc(),
           expiresAtUtc: followUpReadyAt.toUtc().add(const Duration(minutes: 2)),
-          callerName:
-              snapshot.callerName ??
-              _contentResolverContract.resolveCallerName(scenario),
+          callerName: snapshot.callerName ?? _resolveCallerName(scenario),
           status: PendingFollowUpStatus.pending,
         );
         await _pendingFollowUpRepository.savePendingFollowUp(pending);
@@ -228,7 +238,7 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
           flowState: FakeCallState.completed,
           scenario: scenario,
           currentStage: stage,
-          callerName: _contentResolverContract.resolveCallerName(scenario),
+          callerName: _resolveCallerName(scenario),
           sessionId: sessionId,
           followUpStage: null,
           followUpReadyAt: null,
@@ -244,14 +254,19 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
       stage: nextStage,
     );
     final scheduledAt = DateTime.now().toUtc().add(delay);
-    final callerName = _contentResolverContract.resolveCallerName(scenario);
+    final callerName = _resolveCallerName(scenario);
 
     await _notificationContract.scheduleFollowUp(
       sessionId: sessionId,
       scenario: scenario,
       stage: nextStage,
       delay: delay,
-      callerName: callerName,
+      title: callerName,
+      body: _contentResolverContract.resolveFollowUpNotificationBody(
+        scenario: scenario,
+        stage: nextStage,
+        localeTag: _localeTagProvider(),
+      ),
     );
     await _pendingFollowUpRepository.savePendingFollowUp(
       PendingFollowUp(
@@ -286,6 +301,13 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
       }
     }
     return null;
+  }
+
+  String _resolveCallerName(Scenario scenario) {
+    return _contentResolverContract.resolveCallerName(
+      scenario: scenario,
+      localeTag: _localeTagProvider(),
+    );
   }
 
   int _maxStageFor(Scenario scenario) {

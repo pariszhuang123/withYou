@@ -1,10 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/design_tokens.dart';
 
 enum ThemedButtonSize { regular, homeTrigger, callAction }
 
 enum ThemedIconButtonSize { regular, callAction }
+
+class ThemedHeroActionButton extends StatelessWidget {
+  const ThemedHeroActionButton({
+    super.key,
+    required this.onPressed,
+    required this.semanticLabel,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final VoidCallback? onPressed;
+  final String semanticLabel;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.appSpacing;
+    final colors = theme.appColors;
+    final sizes = theme.appSizes;
+
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: semanticLabel,
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+            minimumSize: Size(double.infinity, sizes.homeTriggerSize * 2.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(sizes.cardRadius),
+              side: BorderSide(color: colors.borderSubtle),
+            ),
+            padding: EdgeInsets.all(spacing.large),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon),
+              SizedBox(height: spacing.small),
+              Text(title, style: theme.textTheme.titleLarge),
+              SizedBox(height: spacing.xSmall),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class ThemedButton extends StatelessWidget {
   const ThemedButton({
@@ -219,6 +281,7 @@ class CallActionButton extends StatelessWidget {
     required this.foregroundColor,
     required this.onPressed,
     required this.focusOrder,
+    this.showLabel = true,
   });
 
   final String label;
@@ -228,6 +291,7 @@ class CallActionButton extends StatelessWidget {
   final Color foregroundColor;
   final VoidCallback onPressed;
   final double focusOrder;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -258,17 +322,52 @@ class CallActionButton extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: spacing.small),
-          ExcludeSemantics(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).callTheme.textPrimary,
+          if (showLabel) ...[
+            SizedBox(height: spacing.small),
+            ExcludeSemantics(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).callTheme.textPrimary,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class AppLogo extends StatelessWidget {
+  const AppLogo({super.key, this.size = 64, this.animated = false});
+
+  final double size;
+  final bool animated;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motion = theme.appMotion;
+
+    final logo = Semantics(
+      label: 'withYou app logo',
+      image: true,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: SvgPicture.asset('assets/logos/app_logo.svg'),
+      ),
+    );
+
+    if (!animated) {
+      return logo;
+    }
+
+    return AnimatedScale(
+      scale: 1.03,
+      duration: context.accessibleMotionDuration(motion.avatarPulse),
+      child: logo,
     );
   }
 }

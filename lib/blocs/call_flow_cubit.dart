@@ -106,6 +106,7 @@ class CallFlowCubit extends Cubit<CallFlowState> {
        _sceneReadinessContract = sceneReadinessContract,
       super(CallFlowState.initial()) {
     _stateSubscription = _coordinator.snapshotStream.listen(_handleSnapshot);
+    _handleSnapshot(_coordinator.currentSnapshot);
     unawaited(_loadInitialState());
   }
 
@@ -127,11 +128,19 @@ class CallFlowCubit extends Cubit<CallFlowState> {
     final readiness =
         state.sceneReadiness[selectedScenario] ??
         await _sceneReadinessContract.getReadiness(selectedScenario);
-    final scenarioToLaunch = readiness.state == SceneReadinessState.ready
-        ? selectedScenario
-        : Scenario.presence;
+    if (readiness.state != SceneReadinessState.ready) {
+      return;
+    }
 
-    await _coordinator.startFlow(scenarioToLaunch);
+    await _coordinator.startFlow(selectedScenario);
+  }
+
+  Future<void> refreshReadiness() async {
+    final sceneReadinessList = await _sceneReadinessContract.getAllReadiness();
+    final sceneReadiness = <Scenario, SceneReadinessSnapshot>{
+      for (final snapshot in sceneReadinessList) snapshot.scenario: snapshot,
+    };
+    emit(state.copyWith(sceneReadiness: sceneReadiness));
   }
 
   Future<void> accept() async {
@@ -153,17 +162,13 @@ class CallFlowCubit extends Cubit<CallFlowState> {
   Future<void> _loadInitialState() async {
     final selectedScenario =
         await _appStateContract.getSelectedScenario() ?? Scenario.presence;
-    final sceneReadinessList = await _sceneReadinessContract.getAllReadiness();
-    final sceneReadiness = <Scenario, SceneReadinessSnapshot>{
-      for (final snapshot in sceneReadinessList) snapshot.scenario: snapshot,
-    };
 
     emit(
       state.copyWith(
         selectedScenario: selectedScenario,
-        sceneReadiness: sceneReadiness,
       ),
     );
+    await refreshReadiness();
   }
 
   void _handleSnapshot(CallFlowSnapshot snapshot) {

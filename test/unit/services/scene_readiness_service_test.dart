@@ -15,6 +15,9 @@ class _TestNotificationReadinessContract
 
   @override
   Future<NotificationReadinessState> requestPermission() async => state;
+
+  @override
+  Future<void> openSystemSettings() async {}
 }
 
 class _TestPremiumAccessContract implements PremiumAccessContract {

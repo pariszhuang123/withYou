@@ -1,5 +1,8 @@
+import 'package:flutter/widgets.dart';
+
 import '../contracts/audio_contracts.dart';
 import '../contracts/call_flow_contracts.dart';
+import '../l10n/app_localizations.dart';
 
 class ContentResolverService implements ContentResolverContract {
   const ContentResolverService();
@@ -47,15 +50,29 @@ class ContentResolverService implements ContentResolverContract {
   List<AudioContentDescriptor> listRequiredAudio() => _requiredAudio;
 
   @override
-  String resolveCallerName(Scenario scenario) {
+  String resolveCallerName({
+    required Scenario scenario,
+    required String localeTag,
+  }) {
+    final localizations = _localizationsFor(localeTag);
     switch (scenario) {
       case Scenario.presence:
-        return 'Xiao Chen';
+        return localizations.callerNamePresence;
       case Scenario.socialPull:
-        return 'Xiao Li';
+        return localizations.callerNameSocialPull;
       case Scenario.exitPressure:
-        return 'Xiao Zhang';
+        return localizations.callerNameExitPressure;
     }
+  }
+
+  @override
+  String resolveFollowUpNotificationBody({
+    required Scenario scenario,
+    required int stage,
+    required String localeTag,
+  }) {
+    final localizations = _localizationsFor(localeTag);
+    return localizations.notificationFollowUpBody;
   }
 
   @override
@@ -84,5 +101,20 @@ class ContentResolverService implements ContentResolverContract {
   }) {
     final descriptor = resolveAudioContent(scenario: scenario, stage: stage);
     return 'assets/audio/$localeTag/${descriptor.scenarioDirectory}/stage_$stage.m4a';
+  }
+
+  @override
+  String resolveBundledRingtoneAssetPath() {
+    return 'assets/audio/system/ringtone_loop.m4a';
+  }
+
+  AppLocalizations _localizationsFor(String localeTag) {
+    final localeParts = localeTag.replaceAll('_', '-').split('-');
+    return lookupAppLocalizations(
+      Locale.fromSubtags(
+        languageCode: localeParts.first,
+        countryCode: localeParts.length > 1 ? localeParts[1] : null,
+      ),
+    );
   }
 }

@@ -39,8 +39,7 @@ class AppLocalizationsZhTw extends AppLocalizations {
   String get audioLanguageSectionTitle => '音訊語言';
 
   @override
-  String get audioLanguageSectionSubtitle =>
-      '請先下載語言包，確保需要時可直接離線播放支援音訊。';
+  String get audioLanguageSectionSubtitle => '請先下載語言包，確保需要時可直接離線播放支援音訊。';
 
   @override
   String get audioLanguageReady => '已就緒';
@@ -61,6 +60,38 @@ class AppLocalizationsZhTw extends AppLocalizations {
   String get audioLanguageSelected => '已選擇';
 
   @override
-  String get audioLanguageFallbackHint =>
-      '若所選語言尚未完成離線準備，播放會依序回退到本機可用的中文，再到英文。';
+  String get audioLanguageFallbackHint => '若所選語言尚未完成離線準備，播放會依序回退到本機可用的中文，再到英文。';
+
+  @override
+  String get notificationsSectionTitle => '通知';
+
+  @override
+  String get notificationsSectionEnabled => '後續來電通知已開啟。';
+
+  @override
+  String get notificationsSectionNeedsPermission => '後續來電需要在系統中開啟通知。';
+
+  @override
+  String get notificationsSectionUnavailable => '此裝置無法使用通知。';
+
+  @override
+  String get notificationsSectionTurnOn => '開啟通知';
+
+  @override
+  String get notificationsSectionManage => '打開系統設定';
+
+  @override
+  String get notificationsSectionHelper => '柔性牽引與快速脫身情境依賴後續來電通知。';
+
+  @override
+  String get notificationFollowUpBody => '點一下即可接聽你的支援來電。';
+
+  @override
+  String get callerNamePresence => '小陳';
+
+  @override
+  String get callerNameSocialPull => '小李';
+
+  @override
+  String get callerNameExitPressure => '小張';
 }

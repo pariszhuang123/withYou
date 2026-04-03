@@ -18,6 +18,9 @@ void main() {
           if (call.method == 'initialize') {
             return true;
           }
+          if (call.method == 'requestPermission') {
+            return false;
+          }
           return null;
         });
   });
@@ -29,17 +32,20 @@ void main() {
         .setMockStreamHandler(eventChannel, null);
   });
 
-  test('initialize binds the native bridge and reports enabled state', () async {
-    final service = NotificationService(
-      methodChannel: methodChannel,
-      eventChannel: eventChannel,
-    );
+  test(
+    'initialize binds the native bridge and reports enabled state',
+    () async {
+      final service = NotificationService(
+        methodChannel: methodChannel,
+        eventChannel: eventChannel,
+      );
 
-    final initialized = await service.initialize();
+      final initialized = await service.initialize();
 
-    expect(initialized, isTrue);
-    expect(methodCalls.single.method, 'initialize');
-  });
+      expect(initialized, isTrue);
+      expect(methodCalls.single.method, 'initialize');
+    },
+  );
 
   test('scheduleFollowUp forwards payload to the native bridge', () async {
     final service = NotificationService(
@@ -52,7 +58,8 @@ void main() {
       scenario: Scenario.socialPull,
       stage: 2,
       delay: const Duration(minutes: 2),
-      callerName: 'Xiao Li',
+      title: 'Xiao Li',
+      body: 'Tap to answer your support call.',
     );
 
     expect(methodCalls.single.method, 'scheduleFollowUp');
@@ -61,39 +68,73 @@ void main() {
       'scenario': 'socialPull',
       'stage': 2,
       'delaySeconds': 120,
-      'callerName': 'Xiao Li',
+      'title': 'Xiao Li',
+      'body': 'Tap to answer your support call.',
     });
   });
 
-  test('eventStream emits notification events from the native event channel', () async {
+  test(
+    'requestPermission forwards the permission request to the native bridge',
+    () async {
+      final service = NotificationService(
+        methodChannel: methodChannel,
+        eventChannel: eventChannel,
+      );
+
+      final granted = await service.requestPermission();
+
+      expect(granted, isFalse);
+      expect(methodCalls.single.method, 'requestPermission');
+    },
+  );
+
+  test('openSystemSettings forwards to the native bridge', () async {
     final service = NotificationService(
       methodChannel: methodChannel,
       eventChannel: eventChannel,
     );
 
-    final events = <NotificationEvent>[];
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockStreamHandler(eventChannel, MockStreamHandler.inline(
-      onListen: (Object? arguments, MockStreamHandlerEventSink eventsSink) {
-        eventsSink.success(<String, Object?>{
-          'sessionId': 'session-b',
-          'scenario': 'exitPressure',
-          'stage': 3,
-          'action': 'missed',
-        });
-      },
-      onCancel: (Object? arguments) {},
-    ));
+    await service.openSystemSettings();
 
-    await service.initialize();
-    final subscription = service.eventStream.listen(events.add);
-    await Future<void>.delayed(Duration.zero);
-
-    expect(events.single.sessionId, 'session-b');
-    expect(events.single.scenario, Scenario.exitPressure);
-    expect(events.single.stage, 3);
-    expect(events.single.action, NotificationAction.missed);
-
-    await subscription.cancel();
+    expect(methodCalls.single.method, 'openSystemSettings');
   });
+
+  test(
+    'eventStream emits notification events from the native event channel',
+    () async {
+      final service = NotificationService(
+        methodChannel: methodChannel,
+        eventChannel: eventChannel,
+      );
+
+      final events = <NotificationEvent>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockStreamHandler(
+            eventChannel,
+            MockStreamHandler.inline(
+              onListen:
+                  (Object? arguments, MockStreamHandlerEventSink eventsSink) {
+                    eventsSink.success(<String, Object?>{
+                      'sessionId': 'session-b',
+                      'scenario': 'exitPressure',
+                      'stage': 3,
+                      'action': 'missed',
+                    });
+                  },
+              onCancel: (Object? arguments) {},
+            ),
+          );
+
+      await service.initialize();
+      final subscription = service.eventStream.listen(events.add);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events.single.sessionId, 'session-b');
+      expect(events.single.scenario, Scenario.exitPressure);
+      expect(events.single.stage, 3);
+      expect(events.single.action, NotificationAction.missed);
+
+      await subscription.cancel();
+    },
+  );
 }

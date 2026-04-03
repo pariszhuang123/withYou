@@ -24,6 +24,8 @@ abstract class NotificationReadinessContract {
   Future<NotificationReadinessState> getReadiness();
 
   Future<NotificationReadinessState> requestPermission();
+
+  Future<void> openSystemSettings();
 }
 ```
 
@@ -32,3 +34,4 @@ abstract class NotificationReadinessContract {
 - Permission checks happen before the app relies on notification follow-ups.
 - `unavailable` is reserved for platform-level capability failures.
 - The contract does not schedule notifications; it only reports readiness.
+- `openSystemSettings()` is the escape hatch when the platform prompt is no longer enough.

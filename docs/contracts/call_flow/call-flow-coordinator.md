@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Version | `v0.1` |
+| Version | `v0.2` |
 | Status | `active` |
-| Last Updated | `2026-04-02` |
+| Last Updated | `2026-04-03` |
 | Generated | `manually curated` |
 | ADR | `none` |
 | Module | `call_flow` |
@@ -17,8 +17,8 @@ Provide the UI-facing orchestration boundary for the fake call system.
 This contract hides:
 
 - session ID creation
-- notification event handling
 - pending follow-up reconciliation
+- notification-driven stage resume
 - lower-level timing service entry points
 
 ## Contract Interface
@@ -30,6 +30,11 @@ abstract class CallFlowCoordinatorContract {
 
   Future<void> initialize();
   Future<void> startFlow(Scenario scenario);
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  });
   Future<void> acceptCurrentStage();
   Future<void> declineCurrentStage();
   Future<void> endCurrentStage();
@@ -42,6 +47,7 @@ abstract class CallFlowCoordinatorContract {
 
 - blocs and screens should depend on this contract instead of `FakeCallTimingContract`
 - coordinator owns pending follow-up persistence and reconciliation
+- coordinator exposes explicit resume entry for notification taps
 - notification payload identity is always:
   - `sessionId`
   - `scenario`

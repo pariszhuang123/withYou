@@ -12,6 +12,7 @@ class WechatCallTemplate extends CallTemplateWidget {
     required super.onAccept,
     required super.onDecline,
     required super.onEnd,
+    super.showAvatar,
     super.key,
   });
 
@@ -27,7 +28,9 @@ class WechatCallTemplate extends CallTemplateWidget {
         SizedBox(height: spacing.xLarge),
         buildDisplayOnlyControls(context),
         const Spacer(),
+        SizedBox(height: spacing.large),
         buildActionRow(context),
+        SizedBox(height: spacing.large),
       ],
     );
   }

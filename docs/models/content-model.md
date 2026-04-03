@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines how the three scenarios map to caller names, avatars, and audio assets.
+Defines how the three scenarios map to caller names, ringtone, and audio assets.
 v1 remains Chinese audio only with fixed caller identity per scenario.
 
 ## Scenarios
@@ -25,6 +25,8 @@ v1 remains Chinese audio only with fixed caller identity per scenario.
 ```text
 assets/
 ├── audio/
+│   ├── system/
+│   │   └── ringtone_loop.m4a
 │   └── zh/
 │       ├── presence/
 │       │   └── stage_1.m4a
@@ -36,8 +38,6 @@ assets/
 │           ├── stage_1.m4a
 │           ├── stage_2.m4a
 │           └── stage_3.m4a
-└── avatars/
-    └── default_contact.png
 ```
 
 ## Audio Script Design Principles
@@ -51,9 +51,10 @@ assets/
 
 ## MVP Assets Required
 
-7 audio files plus 1 avatar:
+1 ringtone plus 7 scenario audio files:
 
 ```text
+assets/audio/system/ringtone_loop.m4a
 assets/audio/zh/presence/stage_1.m4a
 assets/audio/zh/social_pull/stage_1.m4a
 assets/audio/zh/social_pull/stage_2.m4a
@@ -61,5 +62,4 @@ assets/audio/zh/social_pull/stage_3.m4a
 assets/audio/zh/exit_pressure/stage_1.m4a
 assets/audio/zh/exit_pressure/stage_2.m4a
 assets/audio/zh/exit_pressure/stage_3.m4a
-assets/avatars/default_contact.png
 ```

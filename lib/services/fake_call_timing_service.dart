@@ -3,12 +3,14 @@ import 'dart:math';
 
 import '../contracts/audio_contracts.dart';
 import '../contracts/call_flow_contracts.dart';
+import '../models/playable_audio_source.dart';
 
 class FakeCallTimingService implements FakeCallTimingContract {
   final NotificationContract notificationContract;
   final AudioPlaybackContract audioPlaybackContract;
   final AudioLanguagePackManagerContract audioLanguagePackManagerContract;
   final ContentResolverContract contentResolverContract;
+  final String Function() localeTagProvider;
 
   final _stateController = StreamController<FakeCallState>.broadcast();
   final Random _random;
@@ -28,6 +30,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     required this.audioPlaybackContract,
     required this.audioLanguagePackManagerContract,
     required this.contentResolverContract,
+    required this.localeTagProvider,
     Random? random,
   }) : _random = random ?? Random();
 
@@ -83,12 +86,14 @@ class FakeCallTimingService implements FakeCallTimingContract {
     FakeCallTrack track = FakeCallTrack.active,
   }) async {
     await notificationContract.cancelAll(sessionId);
+    await audioPlaybackContract.stop();
 
     _sessionId = sessionId;
     _scenario = scenario;
     _currentStage = 1;
     _clearPendingFollowUp();
     _setState(FakeCallState.ringing);
+    await _startRingtoneLoop();
 
     switch (track) {
       case FakeCallTrack.active:
@@ -119,6 +124,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     _currentStage = stage;
     _clearPendingFollowUp();
     _setState(FakeCallState.ringing);
+    await _startRingtoneLoop();
     _scheduleMissedTimer(sessionId, stage);
   }
 
@@ -131,6 +137,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     }
 
     _cancelMissedTimer();
+    await audioPlaybackContract.stop();
     _setState(FakeCallState.inCall);
     final playbackSequence = ++_playbackSequence;
 
@@ -166,6 +173,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
     }
 
     _cancelMissedTimer();
+    await audioPlaybackContract.stop();
     await _onStageResolved();
   }
 
@@ -200,7 +208,16 @@ class FakeCallTimingService implements FakeCallTimingContract {
     }
 
     _cancelMissedTimer();
+    await audioPlaybackContract.stop();
     await _onStageResolved();
+  }
+
+  Future<void> _startRingtoneLoop() {
+    return audioPlaybackContract.playRingtoneLoop(
+      source: BundledAudioSource(
+        assetPath: contentResolverContract.resolveBundledRingtoneAssetPath(),
+      ),
+    );
   }
 
   Future<void> _onStageResolved() async {
@@ -231,7 +248,15 @@ class FakeCallTimingService implements FakeCallTimingContract {
       scenario: scenario,
       stage: nextStage,
       delay: delay,
-      callerName: contentResolverContract.resolveCallerName(scenario),
+      title: contentResolverContract.resolveCallerName(
+        scenario: scenario,
+        localeTag: localeTagProvider(),
+      ),
+      body: contentResolverContract.resolveFollowUpNotificationBody(
+        scenario: scenario,
+        stage: nextStage,
+        localeTag: localeTagProvider(),
+      ),
     );
   }
 

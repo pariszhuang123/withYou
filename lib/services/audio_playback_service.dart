@@ -1,18 +1,31 @@
 import 'dart:async';
 
+import 'package:just_audio/just_audio.dart';
+
 import '../contracts/audio_contracts.dart';
 import '../contracts/call_flow_contracts.dart';
 import '../models/playable_audio_source.dart';
 
 class AudioPlaybackService implements AudioPlaybackContract {
   AudioPlaybackService({
-    Duration Function(Scenario scenario, int stage)? durationForStage,
-  }) : _durationForStage = durationForStage ?? _defaultDurationForStage;
+    PlaybackHandle? ringtoneHandle,
+    PlaybackHandle? clipHandle,
+  }) : _ringtoneHandle = ringtoneHandle ?? JustAudioPlaybackHandle(),
+       _clipHandle = clipHandle ?? JustAudioPlaybackHandle();
 
-  final Duration Function(Scenario scenario, int stage) _durationForStage;
+  final PlaybackHandle _ringtoneHandle;
+  final PlaybackHandle _clipHandle;
 
-  Timer? _playbackTimer;
-  Completer<void>? _playbackCompleter;
+  @override
+  Future<void> playRingtoneLoop({
+    required PlayableAudioSource source,
+  }) async {
+    await _clipHandle.stop();
+    await _ringtoneHandle.stop();
+    await _loadSource(_ringtoneHandle, source);
+    await _ringtoneHandle.setLoopMode(PlaybackLoopMode.one);
+    unawaited(_ringtoneHandle.play());
+  }
 
   @override
   Future<void> playScenarioClip({
@@ -20,41 +33,76 @@ class AudioPlaybackService implements AudioPlaybackContract {
     required int stage,
     required PlayableAudioSource source,
   }) async {
-    await stop();
-
-    final completer = Completer<void>();
-    _playbackCompleter = completer;
-    _playbackTimer = Timer(_durationForStage(scenario, stage), () {
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-      _playbackTimer = null;
-      _playbackCompleter = null;
-    });
-
-    await completer.future;
+    await _ringtoneHandle.stop();
+    await _clipHandle.stop();
+    await _loadSource(_clipHandle, source);
+    await _clipHandle.setLoopMode(PlaybackLoopMode.off);
+    await _clipHandle.play();
   }
 
   @override
   Future<void> stop() async {
-    _playbackTimer?.cancel();
-    _playbackTimer = null;
-
-    final completer = _playbackCompleter;
-    _playbackCompleter = null;
-    if (completer != null && !completer.isCompleted) {
-      completer.complete();
-    }
+    await _ringtoneHandle.stop();
+    await _clipHandle.stop();
   }
 
-  static Duration _defaultDurationForStage(Scenario scenario, int stage) {
-    switch (scenario) {
-      case Scenario.presence:
-        return const Duration(seconds: 8);
-      case Scenario.socialPull:
-        return Duration(seconds: 8 + stage);
-      case Scenario.exitPressure:
-        return Duration(seconds: 6 + stage);
-    }
+  Future<void> _loadSource(
+    PlaybackHandle handle,
+    PlayableAudioSource source,
+  ) {
+    return switch (source) {
+      BundledAudioSource(:final assetPath) => handle.setAsset(assetPath),
+      FileAudioSource(:final filePath) => handle.setFilePath(filePath),
+    };
+  }
+}
+
+enum PlaybackLoopMode { off, one }
+
+abstract class PlaybackHandle {
+  Future<void> setAsset(String assetPath);
+
+  Future<void> setFilePath(String filePath);
+
+  Future<void> setLoopMode(PlaybackLoopMode mode);
+
+  Future<void> play();
+
+  Future<void> stop();
+}
+
+class JustAudioPlaybackHandle implements PlaybackHandle {
+  JustAudioPlaybackHandle() : _player = AudioPlayer();
+
+  final AudioPlayer _player;
+
+  @override
+  Future<void> setAsset(String assetPath) async {
+    await _player.setAsset(assetPath);
+  }
+
+  @override
+  Future<void> setFilePath(String filePath) async {
+    await _player.setFilePath(filePath);
+  }
+
+  @override
+  Future<void> setLoopMode(PlaybackLoopMode mode) {
+    return _player.setLoopMode(
+      switch (mode) {
+        PlaybackLoopMode.off => LoopMode.off,
+        PlaybackLoopMode.one => LoopMode.one,
+      },
+    );
+  }
+
+  @override
+  Future<void> play() {
+    return _player.play();
+  }
+
+  @override
+  Future<void> stop() {
+    return _player.stop();
   }
 }

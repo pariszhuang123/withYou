@@ -31,17 +31,20 @@ class NotificationService implements NotificationContract {
 
   @override
   Future<bool> initialize() async {
-    if (_initialized) {
-      return true;
-    }
+    await _ensureEventStreamBound();
+    return await _methodChannel.invokeMethod<bool>('initialize') ?? false;
+  }
 
-    final initialized =
-        await _methodChannel.invokeMethod<bool>('initialize') ?? false;
-    _nativeEventSubscription = _eventChannel
-        .receiveBroadcastStream()
-        .listen(_handleNativeEvent);
-    _initialized = true;
-    return initialized;
+  @override
+  Future<bool> requestPermission() async {
+    await _ensureEventStreamBound();
+    return await _methodChannel.invokeMethod<bool>('requestPermission') ??
+        false;
+  }
+
+  @override
+  Future<void> openSystemSettings() async {
+    await _methodChannel.invokeMethod<void>('openSystemSettings');
   }
 
   @override
@@ -50,15 +53,18 @@ class NotificationService implements NotificationContract {
     required Scenario scenario,
     required int stage,
     required Duration delay,
-    required String callerName,
+    required String title,
+    required String body,
   }) async {
-    await _methodChannel.invokeMethod<void>('scheduleFollowUp', <String, Object?>{
-      'sessionId': sessionId,
-      'scenario': scenario.name,
-      'stage': stage,
-      'delaySeconds': delay.inSeconds,
-      'callerName': callerName,
-    });
+    await _methodChannel
+        .invokeMethod<void>('scheduleFollowUp', <String, Object?>{
+          'sessionId': sessionId,
+          'scenario': scenario.name,
+          'stage': stage,
+          'delaySeconds': delay.inSeconds,
+          'title': title,
+          'body': body,
+        });
   }
 
   @override
@@ -94,6 +100,17 @@ class NotificationService implements NotificationContract {
       _eventController.add(event);
     }
     _pendingEvents.clear();
+  }
+
+  Future<void> _ensureEventStreamBound() async {
+    if (_initialized) {
+      return;
+    }
+
+    _nativeEventSubscription = _eventChannel.receiveBroadcastStream().listen(
+      _handleNativeEvent,
+    );
+    _initialized = true;
   }
 
   Future<void> dispose() async {

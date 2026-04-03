@@ -17,6 +17,7 @@ class CallTemplateRenderer extends StatelessWidget {
     required this.onAccept,
     required this.onDecline,
     required this.onEnd,
+    this.showAvatar = true,
     super.key,
   });
 
@@ -27,6 +28,7 @@ class CallTemplateRenderer extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onDecline;
   final VoidCallback onEnd;
+  final bool showAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,7 @@ class CallTemplateRenderer extends StatelessWidget {
         onAccept: onAccept,
         onDecline: onDecline,
         onEnd: onEnd,
+        showAvatar: showAvatar,
       ),
       CallTemplate.lineStyle => LineCallTemplate(
         spec: spec,
@@ -48,6 +51,7 @@ class CallTemplateRenderer extends StatelessWidget {
         onAccept: onAccept,
         onDecline: onDecline,
         onEnd: onEnd,
+        showAvatar: showAvatar,
       ),
       CallTemplate.whatsappStyle => WhatsappCallTemplate(
         spec: spec,
@@ -57,6 +61,7 @@ class CallTemplateRenderer extends StatelessWidget {
         onAccept: onAccept,
         onDecline: onDecline,
         onEnd: onEnd,
+        showAvatar: showAvatar,
       ),
       CallTemplate.iosNative => IosNativeCallTemplate(
         spec: spec,
@@ -66,6 +71,7 @@ class CallTemplateRenderer extends StatelessWidget {
         onAccept: onAccept,
         onDecline: onDecline,
         onEnd: onEnd,
+        showAvatar: showAvatar,
       ),
       CallTemplate.androidNative => AndroidNativeCallTemplate(
         spec: spec,
@@ -75,6 +81,7 @@ class CallTemplateRenderer extends StatelessWidget {
         onAccept: onAccept,
         onDecline: onDecline,
         onEnd: onEnd,
+        showAvatar: showAvatar,
       ),
     };
   }

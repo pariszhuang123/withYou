@@ -21,6 +21,12 @@ class _TestNotificationContract implements NotificationContract {
   Future<bool> initialize() async => true;
 
   @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> openSystemSettings() async {}
+
+  @override
   Future<void> cancelAll(String sessionId) async {
     cancelled = true;
   }
@@ -31,7 +37,8 @@ class _TestNotificationContract implements NotificationContract {
     required Scenario scenario,
     required int stage,
     required Duration delay,
-    required String callerName,
+    required String title,
+    required String body,
   }) async {
     requests.add(
       _NotificationRequest(
@@ -39,7 +46,8 @@ class _TestNotificationContract implements NotificationContract {
         scenario: scenario,
         stage: stage,
         delay: delay,
-        callerName: callerName,
+        title: title,
+        body: body,
       ),
     );
   }
@@ -51,18 +59,28 @@ class _NotificationRequest {
     required this.scenario,
     required this.stage,
     required this.delay,
-    required this.callerName,
+    required this.title,
+    required this.body,
   });
 
   final String sessionId;
   final Scenario scenario;
   final int stage;
   final Duration delay;
-  final String callerName;
+  final String title;
+  final String body;
 }
 
 class _TestAudioPlaybackContract implements AudioPlaybackContract {
   final List<PlayableAudioSource> played = [];
+  final List<PlayableAudioSource> ringtoneLoops = [];
+  int stopCount = 0;
+
+  @override
+  Future<void> playRingtoneLoop({required PlayableAudioSource source}) async {
+    ringtoneLoops.add(source);
+    await Future<void>.delayed(Duration.zero);
+  }
 
   @override
   Future<void> playScenarioClip({
@@ -75,7 +93,9 @@ class _TestAudioPlaybackContract implements AudioPlaybackContract {
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stopCount++;
+  }
 }
 
 class _TestAudioLanguagePackManagerContract
@@ -128,15 +148,32 @@ class _TestContentResolverContract implements ContentResolverContract {
   }
 
   @override
-  String resolveCallerName(Scenario scenario) {
+  String resolveBundledRingtoneAssetPath() {
+    return 'assets/audio/system/ringtone_loop.m4a';
+  }
+
+  @override
+  String resolveCallerName({
+    required Scenario scenario,
+    required String localeTag,
+  }) {
     switch (scenario) {
       case Scenario.presence:
-        return 'Xiao Chen';
       case Scenario.socialPull:
-        return 'Xiao Li';
       case Scenario.exitPressure:
-        return 'Xiao Zhang';
+        return localeTag == 'en' ? 'Tommy' : '小陈';
     }
+  }
+
+  @override
+  String resolveFollowUpNotificationBody({
+    required Scenario scenario,
+    required int stage,
+    required String localeTag,
+  }) {
+    return localeTag == 'en'
+        ? 'Tap to answer your support call.'
+        : '点按即可接听你的支援来电。';
   }
 
   @override
@@ -169,6 +206,7 @@ void main() {
       audioPlaybackContract: audio,
       audioLanguagePackManagerContract: audioManager,
       contentResolverContract: content,
+      localeTagProvider: () => 'en',
       random: Random(0),
     );
   });
@@ -180,6 +218,10 @@ void main() {
     expect(service.currentStage, 1);
     expect(service.currentScenario, Scenario.socialPull);
     expect(notification.cancelled, isTrue);
+    expect(
+      (audio.ringtoneLoops.single as BundledAudioSource).assetPath,
+      'assets/audio/system/ringtone_loop.m4a',
+    );
   });
 
   test(
@@ -193,6 +235,7 @@ void main() {
       await service.acceptCurrentStage();
 
       expect(service.currentState, FakeCallState.completed);
+      expect(audio.stopCount, greaterThanOrEqualTo(2));
       expect(
         (audio.played.single as BundledAudioSource).assetPath,
         'audio/presence_stage1.m4a',
@@ -211,7 +254,8 @@ void main() {
     final req = notification.requests.single;
     expect(req.scenario, Scenario.socialPull);
     expect(req.stage, 2);
-    expect(req.callerName, 'Xiao Li');
+    expect(req.title, 'Tommy');
+    expect(req.body, 'Tap to answer your support call.');
     expect(req.delay.inSeconds, inInclusiveRange(120, 240));
     expect(service.pendingFollowUpStage, 2);
     expect(service.nextStageReadyAt, isNotNull);
@@ -277,6 +321,18 @@ void main() {
       expect(notification.requests.single.stage, 2);
     },
   );
+
+  test('declining a ringing stage stops the ringtone', () async {
+    await service.startFlow(
+      sessionId: 's-decline',
+      scenario: Scenario.socialPull,
+    );
+
+    await service.declineCurrentStage();
+
+    expect(audio.stopCount, greaterThanOrEqualTo(2));
+    expect(service.currentState, FakeCallState.awaitingNextStage);
+  });
 
   test('presence notification tap rejects invalid follow-up stages', () async {
     expect(

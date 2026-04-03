@@ -113,6 +113,20 @@ class _TestContentResolver implements ContentResolverContract {
   }
 
   @override
+  String resolveBundledRingtoneAssetPath() {
+    return 'assets/audio/system/ringtone_loop.m4a';
+  }
+
+  @override
+  String resolveFollowUpNotificationBody({
+    required Scenario scenario,
+    required int stage,
+    required String localeTag,
+  }) {
+    return 'Follow-up support call';
+  }
+
+  @override
   AudioContentDescriptor resolveAudioContent({
     required Scenario scenario,
     required int stage,
@@ -125,14 +139,17 @@ class _TestContentResolver implements ContentResolverContract {
   }
 
   @override
-  String resolveCallerName(Scenario scenario) {
+  String resolveCallerName({
+    required Scenario scenario,
+    required String localeTag,
+  }) {
     switch (scenario) {
       case Scenario.presence:
-        return 'Xiao Chen';
+        return localeTag == 'en' ? 'Tommy' : '小陈';
       case Scenario.socialPull:
-        return 'Xiao Li';
+        return localeTag == 'en' ? 'Tommy' : '小陈';
       case Scenario.exitPressure:
-        return 'Xiao Zhang';
+        return localeTag == 'en' ? 'Tommy' : '小陈';
     }
   }
 }
@@ -155,12 +172,19 @@ class _TestNotificationContract implements NotificationContract {
   Future<bool> initialize() async => true;
 
   @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> openSystemSettings() async {}
+
+  @override
   Future<void> scheduleFollowUp({
     required String sessionId,
     required Scenario scenario,
     required int stage,
     required Duration delay,
-    required String callerName,
+    required String title,
+    required String body,
   }) async {
     scheduled.add((
       sessionId: sessionId,
@@ -226,13 +250,14 @@ void main() {
         contentResolverContract: _TestContentResolver(),
         notificationContract: notifications,
         pendingFollowUpRepository: pendingRepository,
+        localeTagProvider: () => 'en',
       );
 
       await service.startFlow(Scenario.socialPull);
       await Future<void>.delayed(Duration.zero);
 
       expect(service.currentSnapshot.flowState, FakeCallState.ringing);
-      expect(service.currentSnapshot.callerName, 'Xiao Li');
+      expect(service.currentSnapshot.callerName, 'Tommy');
       expect(service.currentSnapshot.currentStage, 1);
       expect(service.currentSnapshot.sessionId, isNotNull);
 
@@ -249,6 +274,7 @@ void main() {
       contentResolverContract: _TestContentResolver(),
       notificationContract: notifications,
       pendingFollowUpRepository: pendingRepository,
+      localeTagProvider: () => 'en',
     );
 
     await service.startFlow(Scenario.socialPull);
@@ -266,7 +292,7 @@ void main() {
   });
 
   test(
-    'notification tap events are forwarded into the timing service and clear pending records',
+    'resumeFromNotification forwards into timing and clears pending records',
     () async {
       final timing = _TestTimingContract();
       final notifications = _TestNotificationContract();
@@ -280,7 +306,7 @@ void main() {
             expiresAtUtc: DateTime.now().toUtc().add(
               const Duration(minutes: 2),
             ),
-            callerName: 'Xiao Li',
+            callerName: 'Tommy',
             status: PendingFollowUpStatus.pending,
           ),
         );
@@ -289,17 +315,14 @@ void main() {
         contentResolverContract: _TestContentResolver(),
         notificationContract: notifications,
         pendingFollowUpRepository: pendingRepository,
+        localeTagProvider: () => 'en',
       );
 
-      notifications.emit(
-        const NotificationEvent(
-          sessionId: 'session-from-notification',
-          scenario: Scenario.socialPull,
-          stage: 2,
-          action: NotificationAction.tapped,
-        ),
+      await service.resumeFromNotification(
+        sessionId: 'session-from-notification',
+        scenario: Scenario.socialPull,
+        stage: 2,
       );
-      await Future<void>.delayed(Duration.zero);
 
       expect(timing.lastSessionId, 'session-from-notification');
       expect(timing.currentStage, 2);
@@ -326,7 +349,7 @@ void main() {
             expiresAtUtc: DateTime.now().toUtc().subtract(
               const Duration(minutes: 2, seconds: 1),
             ),
-            callerName: 'Xiao Zhang',
+            callerName: 'Tommy',
             status: PendingFollowUpStatus.pending,
           ),
         );
@@ -335,6 +358,7 @@ void main() {
         contentResolverContract: _TestContentResolver(),
         notificationContract: notifications,
         pendingFollowUpRepository: pendingRepository,
+        localeTagProvider: () => 'en',
       );
 
       await service.initialize();

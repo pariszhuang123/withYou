@@ -14,9 +14,11 @@
 
 Resolves fixed scenario content metadata without performing I/O. This contract owns:
 
-- caller name mapping per scenario
+- localized caller name mapping per scenario and UI locale
+- localized follow-up notification body copy per scenario and UI locale
 - the list of required scenario/stage audio entries
 - bundled asset path construction for bundled locales
+- bundled ringtone asset path construction
 
 Remote download, cache lookup, and locale fallback belong to the audio language pack manager, not this contract.
 
@@ -24,7 +26,16 @@ Remote download, cache lookup, and locale fallback belong to the audio language 
 
 ```dart
 abstract class ContentResolverContract {
-  String resolveCallerName(Scenario scenario);
+  String resolveCallerName({
+    required Scenario scenario,
+    required String localeTag,
+  });
+
+  String resolveFollowUpNotificationBody({
+    required Scenario scenario,
+    required int stage,
+    required String localeTag,
+  });
 
   AudioContentDescriptor resolveAudioContent({
     required Scenario scenario,
@@ -38,6 +49,8 @@ abstract class ContentResolverContract {
     required Scenario scenario,
     required int stage,
   });
+
+  String resolveBundledRingtoneAssetPath();
 }
 ```
 
@@ -47,10 +60,12 @@ abstract class ContentResolverContract {
 - `presence` exposes Stage 1 only.
 - `socialPull` and `exitPressure` expose Stages 1 to 3.
 - Bundled asset paths must be constructed through this contract, never hardcoded in widgets or call flow.
+- Bundled ringtone asset paths must also be constructed through this contract.
 
 ## Tests
 
-- Caller names are fixed per scenario.
+- Caller names vary by scenario and resolved UI locale.
+- Follow-up notification text varies by resolved UI locale.
 - Required audio list is complete.
 - Bundled asset path generation respects locale/scenario/stage.
 - Invalid stage requests throw.

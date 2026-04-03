@@ -44,11 +44,31 @@ import UserNotifications
   private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "initialize":
-      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
-        granted, _ in
+      notificationsEnabled { enabled in
         DispatchQueue.main.async {
           self.flushPendingEvents()
-          result(granted)
+          result(enabled)
+        }
+      }
+    case "requestPermission":
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
+        _, _ in
+        self.notificationsEnabled { enabled in
+          DispatchQueue.main.async {
+            self.flushPendingEvents()
+            result(enabled)
+          }
+        }
+      }
+    case "openSystemSettings":
+      DispatchQueue.main.async {
+        guard let url = URL(string: UIApplication.openSettingsURLString),
+              UIApplication.shared.canOpenURL(url) else {
+          result(nil)
+          return
+        }
+        UIApplication.shared.open(url) { _ in
+          result(nil)
         }
       }
     case "scheduleFollowUp":
@@ -57,7 +77,8 @@ import UserNotifications
             let scenario = arguments["scenario"] as? String,
             let stage = arguments["stage"] as? Int,
             let delaySeconds = arguments["delaySeconds"] as? Int,
-            let callerName = arguments["callerName"] as? String else {
+            let title = arguments["title"] as? String,
+            let body = arguments["body"] as? String else {
         result(
           FlutterError(code: "bad_args", message: "Invalid notification arguments", details: nil)
         )
@@ -65,8 +86,8 @@ import UserNotifications
       }
 
       let content = UNMutableNotificationContent()
-      content.title = callerName
-      content.body = "Follow-up support call"
+      content.title = title
+      content.body = body
       content.sound = .default
       content.userInfo = [
         "sessionId": sessionId,
@@ -119,6 +140,19 @@ import UserNotifications
 
   private func notificationIdentifier(sessionId: String, stage: Int) -> String {
     return "with_you_\(sessionId)_\(stage)"
+  }
+
+  private func notificationsEnabled(completion: @escaping (Bool) -> Void) {
+    UNUserNotificationCenter.current().getNotificationSettings { settings in
+      switch settings.authorizationStatus {
+      case .authorized, .provisional, .ephemeral:
+        completion(true)
+      case .denied, .notDetermined:
+        completion(false)
+      @unknown default:
+        completion(false)
+      }
+    }
   }
 
   private func emitEvent(_ event: [String: Any]) {

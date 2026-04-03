@@ -15,6 +15,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
     required this.onAccept,
     required this.onDecline,
     required this.onEnd,
+    this.showAvatar = true,
     this.avatarLabel = 'Caller avatar',
     super.key,
   });
@@ -26,6 +27,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onDecline;
   final VoidCallback onEnd;
+  final bool showAvatar;
   final String avatarLabel;
 
   bool get isRinging => visualState == CallScreenVisualState.ringing;
@@ -63,6 +65,10 @@ abstract class CallTemplateWidget extends StatelessWidget {
 
   @protected
   Widget buildAvatar(BuildContext context, {double size = 120}) {
+    if (!showAvatar) {
+      return const SizedBox.shrink();
+    }
+
     final theme = Theme.of(context);
     final palette = spec.palette;
     final spacing = theme.appSpacing;
@@ -131,31 +137,38 @@ abstract class CallTemplateWidget extends StatelessWidget {
   Widget buildActionRow(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.appSpacing;
+    final motion = theme.appMotion;
 
     if (isRinging) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          CallActionButton(
-            label: 'Decline',
-            semanticLabel: 'Decline support call',
-            icon: Icons.call_end,
-            backgroundColor: spec.palette.declineAction,
-            foregroundColor: theme.callTheme.onDeclineAction,
-            onPressed: onDecline,
-            focusOrder: 1,
-          ),
-          SizedBox(width: spacing.medium),
-          CallActionButton(
-            label: 'Accept',
-            semanticLabel: 'Accept support call',
-            icon: Icons.call,
-            backgroundColor: spec.palette.acceptAction,
-            foregroundColor: theme.callTheme.onAcceptAction,
-            onPressed: onAccept,
-            focusOrder: 2,
-          ),
-        ],
+      return AnimatedScale(
+        scale: 1.05,
+        duration: context.accessibleMotionDuration(motion.avatarPulse),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            CallActionButton(
+              label: 'Hang',
+              semanticLabel: 'Decline support call',
+              icon: Icons.call_end,
+              backgroundColor: spec.palette.declineAction,
+              foregroundColor: theme.callTheme.onDeclineAction,
+              onPressed: onDecline,
+              focusOrder: 1,
+              showLabel: false,
+            ),
+            SizedBox(width: spacing.medium),
+            CallActionButton(
+              label: 'Dial',
+              semanticLabel: 'Accept support call',
+              icon: Icons.call,
+              backgroundColor: spec.palette.acceptAction,
+              foregroundColor: theme.callTheme.onAcceptAction,
+              onPressed: onAccept,
+              focusOrder: 2,
+              showLabel: false,
+            ),
+          ],
+        ),
       );
     }
 

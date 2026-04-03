@@ -16,5 +16,16 @@
   "audioLanguageFailed": "下載失敗",
   "audioLanguageDownload": "下載",
   "audioLanguageSelected": "已選擇",
-  "audioLanguageFallbackHint": "若所選語言尚未完成離線準備，播放會依序回退到本機可用的中文，再到英文。"
+  "audioLanguageFallbackHint": "若所選語言尚未完成離線準備，播放會依序回退到本機可用的中文，再到英文。",
+  "notificationsSectionTitle": "通知",
+  "notificationsSectionEnabled": "後續來電通知已開啟。",
+  "notificationsSectionNeedsPermission": "後續來電需要在系統中開啟通知。",
+  "notificationsSectionUnavailable": "此裝置無法使用通知。",
+  "notificationsSectionTurnOn": "開啟通知",
+  "notificationsSectionManage": "打開系統設定",
+  "notificationsSectionHelper": "柔性牽引與快速脫身情境依賴後續來電通知。",
+  "notificationFollowUpBody": "點一下即可接聽你的支援來電。",
+  "callerNamePresence": "小陳",
+  "callerNameSocialPull": "小李",
+  "callerNameExitPressure": "小張"
 }

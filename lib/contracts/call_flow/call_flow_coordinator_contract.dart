@@ -43,6 +43,12 @@ abstract class CallFlowCoordinatorContract {
 
   Future<void> startFlow(Scenario scenario);
 
+  Future<void> resumeFromNotification({
+    required String sessionId,
+    required Scenario scenario,
+    required int stage,
+  });
+
   Future<void> acceptCurrentStage();
 
   Future<void> declineCurrentStage();
