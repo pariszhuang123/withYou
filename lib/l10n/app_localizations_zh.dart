@@ -15,6 +15,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settings => '设置';
 
   @override
+  String get appLogoSemanticLabel => 'withYou 应用标志';
+
+  @override
+  String get homeOpenSettingsSemanticLabel => 'Open settings';
+
+  @override
+  String get homeSupportStyleTitle => '选择支援方式';
+
+  @override
+  String get homeSupportStyleGentle => '轻柔';
+
+  @override
+  String get homeSupportStyleSteady => '稳定';
+
+  @override
+  String get homeSupportStyleUrgent => '紧急';
+
+  @override
   String get scenarioSelector => '选择场景';
 
   @override
@@ -84,13 +102,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsSectionHelper => '柔性牵引和快速脱身场景依赖后续来电通知。';
 
   @override
+  String get notificationsPermissionDialogTitle => '开启通知';
+
+  @override
+  String get notificationsPermissionDialogBody =>
+      '柔性牵引和快速脱身需要先开启通知，后续来电才能按时出现。';
+
+  @override
+  String get notificationsPermissionDialogNotNow => '暂不';
+
+  @override
+  String get notificationsPermissionDialogContinue => '继续';
+
+  @override
+  String get notificationsPermissionStillOff => '通知仍未开启。';
+
+  @override
   String get homeTriggerHint => '点击标志即可开始';
 
   @override
   String get homeStartCallSemanticLabel => '开始当前支援来电';
 
   @override
-  String get upgradeToPremium => '升级到高级版';
+  String get upgradeToPremium => '解锁高级版';
 
   @override
   String get premiumActive => '高级版已启用';
@@ -99,7 +133,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get premiumActiveMessage => '高级版已启用。你可以使用全部功能。';
 
   @override
-  String get paywallTitle => '升级到高级版';
+  String get paywallTitle => '解锁高级版';
 
   @override
   String get paywallHeadline => '解锁柔性支援和快速支援的后续来电';
@@ -109,10 +143,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '当你被困住时，可获得更多支援：柔性支援的后续来电会持续制造打断，快速支援的后续来电能帮助你更快脱身，主屏幕小组件还能让你一键触发来电。';
 
   @override
-  String get paywallStoreNote => '高级版会让柔性支援、快速支援和小组件支援在你需要时随时可用。';
+  String get paywallStoreNote => '一次购买，长期使用。高级版会让柔性支援、快速支援和小组件支援在你需要时随时可用。';
 
   @override
-  String get paywallSeePrice => '升级到高级版';
+  String get paywallSeePrice => '查看价格';
 
   @override
   String get paywallRestore => '恢复购买';
@@ -139,7 +173,67 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallBenefitWidgetBody => '在你需要时，从主屏幕一键触发所选的支援来电。';
 
   @override
+  String get widgetSetupTitle => '主屏幕小组件';
+
+  @override
+  String get widgetSetupLockedBody => '解锁高级版后，即可添加一个一键启动所选支援来电的主屏幕小组件。';
+
+  @override
+  String get widgetSetupReadyBody => '从手机的小组件列表添加它，在你需要时一键触发支援来电。';
+
+  @override
+  String get widgetSetupUnavailableBody => '此设备当前无法使用主屏幕小组件。';
+
+  @override
+  String get widgetSetupUnlockAction => '解锁一键小组件';
+
+  @override
+  String get widgetSetupReadyLabel => '小组件已就绪';
+
+  @override
+  String get paywallBenefitPresenceBody => '用一通即时来电制造轻度打断。';
+
+  @override
   String get notificationFollowUpBody => '点按即可接听你的支援来电。';
+
+  @override
+  String get audioLanguageUpdateAvailable => '有可用更新';
+
+  @override
+  String get languageTraditionalChinese => '繁体字';
+
+  @override
+  String get awaitingStageTitle => '已安排后续来电';
+
+  @override
+  String awaitingStageBody(Object stage) => '第 $stage 阶段正在等待本地通知计时器。';
+
+  @override
+  String get awaitingStageReady => '下一通后续来电现在可以打开。';
+
+  @override
+  String awaitingStageCountdown(Object remaining) => '$remaining 后可用';
+
+  @override
+  String get callAvatarSemanticLabel => '来电者头像';
+
+  @override
+  String get callActionHang => '挂断';
+
+  @override
+  String get callActionDial => '接听';
+
+  @override
+  String get callActionEnd => '结束';
+
+  @override
+  String get callDeclineSemanticLabel => '拒绝支援来电';
+
+  @override
+  String get callAcceptSemanticLabel => '接听支援来电';
+
+  @override
+  String get callEndSemanticLabel => '结束支援来电';
 
   @override
   String get callerNamePresence => '小陈';

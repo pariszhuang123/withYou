@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../contracts/call_flow_contracts.dart';
+import '../../l10n/app_localizations.dart';
 import '../../theme/design_tokens.dart';
 import '../themed_components.dart';
 
@@ -16,7 +17,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
     required this.onDecline,
     required this.onEnd,
     this.showAvatar = true,
-    this.avatarLabel = 'Caller avatar',
+    this.avatarLabel,
     super.key,
   });
 
@@ -28,7 +29,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
   final VoidCallback onDecline;
   final VoidCallback onEnd;
   final bool showAvatar;
-  final String avatarLabel;
+  final String? avatarLabel;
 
   bool get isRinging => visualState == CallScreenVisualState.ringing;
 
@@ -73,6 +74,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
     final palette = spec.palette;
     final spacing = theme.appSpacing;
     final motion = theme.appMotion;
+    final localizations = AppLocalizations.of(context);
 
     final avatar = ExcludeSemantics(
       child: ThemedAvatarPlaceholder(
@@ -84,7 +86,10 @@ abstract class CallTemplateWidget extends StatelessWidget {
     );
 
     return Semantics(
-      label: avatarLabel,
+      label:
+          avatarLabel ??
+          localizations?.callAvatarSemanticLabel ??
+          'Caller avatar',
       image: true,
       child: AnimatedScale(
         scale: isRinging && spec.supportsAvatarPulse ? 1.03 : 1,
@@ -137,6 +142,7 @@ abstract class CallTemplateWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final spacing = theme.appSpacing;
     final motion = theme.appMotion;
+    final localizations = AppLocalizations.of(context);
 
     if (isRinging) {
       return AnimatedScale(
@@ -146,8 +152,10 @@ abstract class CallTemplateWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             CallActionButton(
-              label: 'Hang',
-              semanticLabel: 'Decline support call',
+              label: localizations?.callActionHang ?? 'Hang',
+              semanticLabel:
+                  localizations?.callDeclineSemanticLabel ??
+                  'Decline support call',
               icon: Icons.call_end,
               backgroundColor: spec.palette.declineAction,
               foregroundColor: theme.callTheme.onDeclineAction,
@@ -157,8 +165,10 @@ abstract class CallTemplateWidget extends StatelessWidget {
             ),
             SizedBox(width: spacing.medium),
             CallActionButton(
-              label: 'Dial',
-              semanticLabel: 'Accept support call',
+              label: localizations?.callActionDial ?? 'Dial',
+              semanticLabel:
+                  localizations?.callAcceptSemanticLabel ??
+                  'Accept support call',
               icon: Icons.call,
               backgroundColor: spec.palette.acceptAction,
               foregroundColor: theme.callTheme.onAcceptAction,
@@ -173,8 +183,9 @@ abstract class CallTemplateWidget extends StatelessWidget {
 
     return Center(
       child: CallActionButton(
-        label: 'End',
-        semanticLabel: 'End support call',
+        label: localizations?.callActionEnd ?? 'End',
+        semanticLabel:
+            localizations?.callEndSemanticLabel ?? 'End support call',
         icon: Icons.call_end,
         backgroundColor: spec.palette.declineAction,
         foregroundColor: theme.callTheme.onDeclineAction,

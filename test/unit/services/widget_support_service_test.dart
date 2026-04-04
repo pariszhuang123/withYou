@@ -89,7 +89,32 @@ void main() {
   );
 
   test(
-    'planLaunch falls back to presence when selected widget scenario is not ready',
+    'planLaunch opens the paywall when home-screen widget access is premium gated',
+    () async {
+      final service = buildService(
+        snapshots: {
+          Scenario.exitPressure: const SceneReadinessSnapshot(
+            scenario: Scenario.exitPressure,
+            state: SceneReadinessState.ready,
+          ),
+        },
+        paywallDecision: PaywallDecision.showFeatureGate,
+      );
+
+      final plan = await service.planLaunch(
+        surface: LaunchSurface.homeScreenWidget,
+        selectedScenario: Scenario.exitPressure,
+      );
+
+      expect(plan.outcome, WidgetLaunchOutcome.openPremiumScreen);
+      expect(plan.requestedScenario, Scenario.exitPressure);
+      expect(plan.resolvedScenario, Scenario.exitPressure);
+      expect(plan.showFallbackMessage, isFalse);
+    },
+  );
+
+  test(
+    'app button can still fall back to presence when a selected scenario is not ready',
     () async {
       final service = buildService(
         snapshots: {
@@ -101,12 +126,11 @@ void main() {
       );
 
       final plan = await service.planLaunch(
-        surface: LaunchSurface.homeScreenWidget,
+        surface: LaunchSurface.appButton,
         selectedScenario: Scenario.exitPressure,
       );
 
       expect(plan.outcome, WidgetLaunchOutcome.fallbackToPresence);
-      expect(plan.requestedScenario, Scenario.exitPressure);
       expect(plan.resolvedScenario, Scenario.presence);
       expect(plan.showFallbackMessage, isTrue);
     },

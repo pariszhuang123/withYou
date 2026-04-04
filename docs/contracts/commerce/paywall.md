@@ -45,7 +45,8 @@ abstract class PaywallContract {
 ## Rules
 
 - Never show the paywall during trigger execution.
-- Never show the paywall during widget launch.
+- Widget launch should not interrupt an active support flow, but a locked
+  premium widget may route into the paywall before a flow starts.
 - Never show the paywall during an active call flow.
 - Show the paywall only at intention moments where the user is explicitly
   trying to access a premium capability.

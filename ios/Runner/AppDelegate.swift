@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import UserNotifications
+import WidgetKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterStreamHandler, UNUserNotificationCenterDelegate {
@@ -9,6 +10,9 @@ import UserNotifications
   private let pendingEventsKey = "with_you_pending_notification_events"
   private let widgetEventChannelName = "with_you/widget_launch/events"
   private let pendingWidgetEventsKey = "with_you_pending_widget_launch_events"
+  private let widgetVisualStateMethodChannelName = "with_you/widget_visual_state/methods"
+  private let widgetAppGroupId = "group.com.example.withYou.shared"
+  private let widgetPremiumActiveKey = "with_you_widget_premium_active"
   private let widgetScheme = "withyou"
   private let widgetHost = "widget-launch"
   private var eventSink: FlutterEventSink?
@@ -44,6 +48,14 @@ import UserNotifications
       let widgetStreamHandler = WidgetLaunchStreamHandler(appDelegate: self)
       self.widgetStreamHandler = widgetStreamHandler
       widgetEventChannel.setStreamHandler(widgetStreamHandler)
+
+      let widgetVisualStateChannel = FlutterMethodChannel(
+        name: widgetVisualStateMethodChannelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      widgetVisualStateChannel.setMethodCallHandler { [weak self] call, result in
+        self?.handleWidgetVisualStateMethodCall(call, result: result)
+      }
     }
 
     if let url = launchOptions?[.url] as? URL {
@@ -167,6 +179,30 @@ import UserNotifications
     }
   }
 
+  private func handleWidgetVisualStateMethodCall(
+    _ call: FlutterMethodCall,
+    result: @escaping FlutterResult
+  ) {
+    switch call.method {
+    case "syncPremiumAccess":
+      guard let arguments = call.arguments as? [String: Any],
+            let isActive = arguments["isActive"] as? Bool else {
+        result(
+          FlutterError(code: "bad_args", message: "Invalid widget visual state arguments", details: nil)
+        )
+        return
+      }
+
+      sharedWidgetDefaults().set(isActive, forKey: widgetPremiumActiveKey)
+      if #available(iOS 14.0, *) {
+        WidgetCenter.shared.reloadAllTimelines()
+      }
+      result(nil)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
   private func notificationIdentifier(sessionId: String, stage: Int) -> String {
     return "with_you_\(sessionId)_\(stage)"
   }
@@ -231,6 +267,10 @@ import UserNotifications
     let scenario = components?.queryItems?.first(where: { $0.name == "scenario" })?.value ?? ""
     emitWidgetEvent(["scenario": scenario])
     return true
+  }
+
+  private func sharedWidgetDefaults() -> UserDefaults {
+    UserDefaults(suiteName: widgetAppGroupId) ?? .standard
   }
 
   private func reconcileMissedNotifications() {

@@ -2,11 +2,6 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/launch_background" />
     <item
-        android:width="112dp"
-        android:height="112dp"
-        android:gravity="center">
-        <shape android:shape="oval">
-            <solid android:color="@color/launch_brand_accent" />
-        </shape>
-    </item>
+        android:drawable="@drawable/launch_logo"
+        android:gravity="center" />
 </layer-list>

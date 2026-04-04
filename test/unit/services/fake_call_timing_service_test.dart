@@ -250,19 +250,13 @@ void main() {
     await service.acceptCurrentStage();
 
     expect(service.currentState, FakeCallState.awaitingNextStage);
-    expect(notification.requests.length, 1);
-    final req = notification.requests.single;
-    expect(req.scenario, Scenario.socialPull);
-    expect(req.stage, 2);
-    expect(req.title, 'Tommy');
-    expect(req.body, 'Tap to answer your support call.');
-    expect(req.delay.inSeconds, inInclusiveRange(120, 240));
+    expect(notification.requests, isEmpty);
     expect(service.pendingFollowUpStage, 2);
     expect(service.nextStageReadyAt, isNotNull);
   });
 
   test(
-    'declining stage 2 for socialPull schedules stage 3 and stage 3 decline completes',
+    'declining stage 2 for socialPull completes and cancels follow-ups',
     () async {
       await service.startFlow(sessionId: 's3', scenario: Scenario.socialPull);
       await service.acceptCurrentStage();
@@ -273,22 +267,10 @@ void main() {
       );
       await service.declineCurrentStage();
 
-      expect(service.currentState, FakeCallState.awaitingNextStage);
-      expect(notification.requests.length, 2);
-      expect(notification.requests.last.stage, 3);
-      expect(
-        notification.requests.last.delay.inSeconds,
-        inInclusiveRange(240, 480),
-      );
-
-      await service.onNotificationTapped(
-        sessionId: 's3',
-        scenario: Scenario.socialPull,
-        stage: 3,
-      );
-      await service.declineCurrentStage();
-
       expect(service.currentState, FakeCallState.completed);
+      expect(notification.cancelled, isTrue);
+      expect(service.pendingFollowUpStage, isNull);
+      expect(service.nextStageReadyAt, isNull);
     },
   );
 
@@ -301,8 +283,9 @@ void main() {
 
     await service.acceptCurrentStage();
 
-    final delay = notification.requests.single.delay;
-    expect(delay.inSeconds, inInclusiveRange(45, 90));
+    expect(service.currentState, FakeCallState.awaitingNextStage);
+    expect(service.pendingFollowUpStage, 2);
+    expect(notification.requests, isEmpty);
   });
 
   test(
@@ -318,7 +301,8 @@ void main() {
       await service.endCurrentStage();
 
       expect(service.currentState, FakeCallState.awaitingNextStage);
-      expect(notification.requests.single.stage, 2);
+      expect(service.pendingFollowUpStage, 2);
+      expect(notification.requests, isEmpty);
     },
   );
 
@@ -331,7 +315,24 @@ void main() {
     await service.declineCurrentStage();
 
     expect(audio.stopCount, greaterThanOrEqualTo(2));
+    expect(service.currentState, FakeCallState.completed);
+  });
+
+  test('missing a ringing stage still schedules the next follow-up', () async {
+    await service.startFlow(
+      sessionId: 's-missed',
+      scenario: Scenario.socialPull,
+    );
+
+    await service.handleMissedStage(
+      sessionId: 's-missed',
+      scenario: Scenario.socialPull,
+      stage: 1,
+    );
+
     expect(service.currentState, FakeCallState.awaitingNextStage);
+    expect(service.pendingFollowUpStage, 2);
+    expect(notification.requests, isEmpty);
   });
 
   test('presence notification tap rejects invalid follow-up stages', () async {

@@ -15,6 +15,7 @@ class _WithYouCustomLintsPlugin extends PluginBase {
       AvoidRawDecorationInPresentationRule(),
       AvoidRawTypographyStylesInPresentationRule(),
       AvoidRawIconSizeInPresentationRule(),
+      AvoidRawUserFacingTextRule(),
       RequireSemanticLabelOnAppInteractiveWidgetsRule(),
       AvoidRawTappableControlsWithoutTokenConstraintsRule(),
     ];
@@ -234,6 +235,39 @@ class AvoidRawIconSizeInPresentationRule extends DartLintRule {
 
     context.registry.addInstanceCreationExpression((node) {
       if (hasLiteralIconSize(node)) {
+        reporter.atNode(node, code);
+      }
+    });
+  }
+}
+
+class AvoidRawUserFacingTextRule extends DartLintRule {
+  const AvoidRawUserFacingTextRule() : super(code: _rawUserFacingTextCode);
+
+  static const _rawUserFacingTextCode = LintCode(
+    name: 'avoid_raw_user_facing_text',
+    problemMessage:
+        'Do not hardcode user-facing text in lib code. Read visible strings from AppLocalizations.',
+  );
+
+  @override
+  void run(
+    CustomLintResolver resolver,
+    DiagnosticReporter reporter,
+    CustomLintContext context,
+  ) {
+    if (!shouldLintUserFacingTextPath(resolver.path)) {
+      return;
+    }
+
+    context.registry.addInstanceCreationExpression((node) {
+      if (hasRawUserFacingTextInCreation(node)) {
+        reporter.atNode(node, code);
+      }
+    });
+
+    context.registry.addDefaultFormalParameter((node) {
+      if (hasRawUserFacingTextDefault(node)) {
         reporter.atNode(node, code);
       }
     });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/design_tokens.dart';
 
 enum ThemedButtonSize { regular, homeTrigger, callAction }
@@ -478,7 +479,9 @@ class _AppLogoImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'withYou app logo',
+      label:
+          AppLocalizations.of(context)?.appLogoSemanticLabel ??
+          'withYou app logo',
       image: true,
       child: SizedBox(
         width: size,

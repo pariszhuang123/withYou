@@ -201,13 +201,28 @@ class CallFlowCoordinatorService implements CallFlowCoordinatorContract {
             followUpReadyAt == null) {
           return;
         }
+        final callerName =
+            snapshot.callerName ?? _resolveCallerName(scenario);
+        final delay = followUpReadyAt.toUtc().difference(DateTime.now().toUtc());
+        await _notificationContract.scheduleFollowUp(
+          sessionId: sessionId,
+          scenario: scenario,
+          stage: followUpStage,
+          delay: delay.isNegative ? Duration.zero : delay,
+          title: callerName,
+          body: _contentResolverContract.resolveFollowUpNotificationBody(
+            scenario: scenario,
+            stage: followUpStage,
+            localeTag: _localeTagProvider(),
+          ),
+        );
         final pending = PendingFollowUp(
           sessionId: sessionId,
           scenario: scenario,
           stage: followUpStage,
           scheduledAtUtc: followUpReadyAt.toUtc(),
           expiresAtUtc: followUpReadyAt.toUtc().add(const Duration(minutes: 2)),
-          callerName: snapshot.callerName ?? _resolveCallerName(scenario),
+          callerName: callerName,
           status: PendingFollowUpStatus.pending,
         );
         await _pendingFollowUpRepository.savePendingFollowUp(pending);

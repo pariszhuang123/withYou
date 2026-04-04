@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../contracts/app_contracts.dart';
@@ -13,6 +14,7 @@ import '../models/playable_audio_source.dart';
 
 typedef ManifestLoader = Future<Map<String, Object?>> Function();
 typedef RemoteFileDownloader = Future<List<int>> Function(Uri uri);
+typedef AssetAvailabilityChecker = Future<bool> Function(String assetPath);
 
 class AudioLanguagePackManagerService
     implements AudioLanguagePackManagerContract {
@@ -25,6 +27,7 @@ class AudioLanguagePackManagerService
     Uri? manifestUri,
     ManifestLoader? manifestLoader,
     RemoteFileDownloader? remoteFileDownloader,
+    AssetAvailabilityChecker? assetAvailabilityChecker,
   }) : _appStateContract = appStateContract,
        _repository = repository,
        _contentResolverContract = contentResolverContract,
@@ -32,7 +35,9 @@ class AudioLanguagePackManagerService
        _directoryProvider = directoryProvider,
        _manifestUri = manifestUri,
        _manifestLoader = manifestLoader,
-       _remoteFileDownloader = remoteFileDownloader;
+       _remoteFileDownloader = remoteFileDownloader,
+       _assetAvailabilityChecker =
+           assetAvailabilityChecker ?? _defaultAssetAvailabilityChecker;
 
   final AppStateContract _appStateContract;
   final AudioLanguagePackRepositoryContract _repository;
@@ -42,6 +47,7 @@ class AudioLanguagePackManagerService
   final Uri? _manifestUri;
   final ManifestLoader? _manifestLoader;
   final RemoteFileDownloader? _remoteFileDownloader;
+  final AssetAvailabilityChecker _assetAvailabilityChecker;
 
   static const List<AudioLanguage> _catalog = <AudioLanguage>[
     AudioLanguage(localeTag: 'en', displayName: 'English', isBundled: true),
@@ -174,6 +180,18 @@ class AudioLanguagePackManagerService
     final fallbackChain = _fallbackChain(selectedLocale);
     for (final localeTag in fallbackChain) {
       if (_isBundled(localeTag)) {
+        final assetPath = _contentResolverContract.resolveBundledAudioAssetPath(
+          localeTag: localeTag,
+          scenario: scenario,
+          stage: stage,
+        );
+        if (!await _assetAvailabilityChecker(assetPath)) {
+          _logger.warn(
+            'Bundled audio asset unavailable for $localeTag ${scenario.name} stage $stage at $assetPath',
+            category: 'audio',
+          );
+          continue;
+        }
         if (localeTag != selectedLocale) {
           _logger.warn(
             'Falling back from $selectedLocale to $localeTag for ${scenario.name} stage $stage',
@@ -182,13 +200,7 @@ class AudioLanguagePackManagerService
         }
         return ResolvedPlayableAudio(
           localeTag: localeTag,
-          source: BundledAudioSource(
-            assetPath: _contentResolverContract.resolveBundledAudioAssetPath(
-              localeTag: localeTag,
-              scenario: scenario,
-              stage: stage,
-            ),
-          ),
+          source: BundledAudioSource(assetPath: assetPath),
         );
       }
 
@@ -413,6 +425,15 @@ class AudioLanguagePackManagerService
       return bytes;
     } finally {
       client.close(force: true);
+    }
+  }
+
+  static Future<bool> _defaultAssetAvailabilityChecker(String assetPath) async {
+    try {
+      await rootBundle.load(assetPath);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

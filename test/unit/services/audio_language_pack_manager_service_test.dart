@@ -42,6 +42,7 @@ void main() {
   late AppStateRepository appStateRepository;
   late AudioLanguagePackRepository packRepository;
   late _TestLogger logger;
+  late Set<String> availableAssets;
   late AudioLanguagePackManagerService service;
 
   setUp(() async {
@@ -55,6 +56,7 @@ void main() {
       directoryProvider: () async => tempDirectory,
     );
     logger = _TestLogger();
+    availableAssets = <String>{};
 
     service = AudioLanguagePackManagerService(
       appStateContract: appStateRepository,
@@ -62,6 +64,8 @@ void main() {
       contentResolverContract: const ContentResolverService(),
       logger: logger,
       directoryProvider: () async => tempDirectory,
+      assetAvailabilityChecker: (assetPath) async =>
+          availableAssets.contains(assetPath),
     );
   });
 
@@ -110,6 +114,7 @@ void main() {
 
   test('resolvePlayableAudio uses bundled zh for selected zh locale', () async {
     await appStateRepository.setSelectedAudioLocaleTag('zh');
+    availableAssets.add('assets/audio/zh/presence/stage_1.m4a');
 
     final resolved = await service.resolvePlayableAudio(
       scenario: Scenario.presence,
@@ -124,6 +129,7 @@ void main() {
     'resolvePlayableAudio falls back to bundled zh when selected locale is absent',
     () async {
       await appStateRepository.setSelectedAudioLocaleTag('zh-TW');
+      availableAssets.add('assets/audio/zh/presence/stage_1.m4a');
 
       final resolved = await service.resolvePlayableAudio(
         scenario: Scenario.presence,
@@ -136,6 +142,44 @@ void main() {
         contains('assets/audio/zh/'),
       );
       expect(logger.warnings.single, contains('Falling back'));
+    },
+  );
+
+  test(
+    'resolvePlayableAudio skips unavailable selected bundled asset and falls back',
+    () async {
+      await appStateRepository.setSelectedAudioLocaleTag('zh');
+      availableAssets.add('assets/audio/en/presence/stage_1.m4a');
+
+      final resolved = await service.resolvePlayableAudio(
+        scenario: Scenario.presence,
+        stage: 1,
+      );
+
+      expect(resolved.localeTag, 'en');
+      expect(
+        (resolved.source as BundledAudioSource).assetPath,
+        'assets/audio/en/presence/stage_1.m4a',
+      );
+      expect(logger.warnings, hasLength(2));
+      expect(
+        logger.warnings.first,
+        contains('Bundled audio asset unavailable'),
+      );
+      expect(logger.warnings.last, contains('Falling back from zh to en'));
+    },
+  );
+
+  test(
+    'resolvePlayableAudio throws when no bundled fallback asset exists',
+    () async {
+      await appStateRepository.setSelectedAudioLocaleTag('zh');
+
+      await expectLater(
+        service.resolvePlayableAudio(scenario: Scenario.presence, stage: 1),
+        throwsA(isA<StateError>()),
+      );
+      expect(logger.errors.single, contains('No local audio source available'));
     },
   );
 }

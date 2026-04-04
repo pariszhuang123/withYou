@@ -7,6 +7,8 @@ import '../contracts/commerce_contracts.dart';
 import '../contracts/readiness_contracts.dart';
 import '../screens/call_flow_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/paywall_screen.dart';
+import '../screens/settings_screen.dart';
 
 class AppRouterService implements AppRouterContract {
   AppRouterService({
@@ -156,7 +158,17 @@ class AppRouterService implements AppRouterContract {
         stage: stage ?? intent?.stage,
         sessionId: sessionId ?? intent?.sessionId,
       );
-      await _router.push(_callLocation(_currentRoute, intent));
+      final location = _callLocation(_currentRoute, intent);
+      final isExternal =
+          intent?.source == AppLaunchSource.notification ||
+          intent?.source == AppLaunchSource.homeScreenWidget;
+      if (isExternal) {
+        _router.go(location);
+        _callRouteVisible = false;
+        _syncCurrentRouteFromRouter();
+        return;
+      }
+      await _router.push(location);
       _callRouteVisible = false;
       _syncCurrentRouteFromRouter();
       return;
@@ -168,6 +180,8 @@ class AppRouterService implements AppRouterContract {
 
     if (_router.canPop()) {
       _router.pop();
+    } else {
+      _router.go(_homePath);
     }
     _callRouteVisible = false;
     _currentRoute = _lastNonCallRoute;

@@ -13,6 +13,7 @@ import '../contracts/platform_contracts.dart';
 import '../contracts/readiness_contracts.dart';
 import '../platform/notification_service.dart';
 import '../platform/widget_launch_service.dart';
+import '../platform/widget_visual_state_service.dart';
 import '../repositories/app_state_repository.dart';
 import '../repositories/audio_language_pack_repository.dart';
 import '../repositories/pending_follow_up_repository.dart';
@@ -71,7 +72,12 @@ Future<void> setupServiceLocator({required AppConfig config}) async {
   sl.registerLazySingleton<WidgetLaunchEventContract>(
     () => sl<WidgetLaunchPlatformService>(),
   );
-  sl.registerLazySingleton<AudioPlaybackContract>(() => AudioPlaybackService());
+  sl.registerLazySingleton<WidgetVisualStateContract>(
+    () => WidgetVisualStateService(),
+  );
+  sl.registerLazySingleton<AudioPlaybackContract>(
+    () => AudioPlaybackService(logger: sl<KinlyLoggerContract>()),
+  );
 
   Future<Directory> directoryProvider() async {
     final baseDirectory = await getApplicationSupportDirectory();
@@ -82,10 +88,31 @@ Future<void> setupServiceLocator({required AppConfig config}) async {
     () => AppStateRepository(directoryProvider: directoryProvider),
   );
   sl.registerLazySingleton<PremiumAccessContract>(
-    () => PremiumAccessService(appStateContract: sl<AppStateContract>()),
+    () => PremiumAccessService(
+      appStateContract: sl<AppStateContract>(),
+      widgetVisualStateContract: sl<WidgetVisualStateContract>(),
+    ),
   );
   sl.registerLazySingleton<PaywallContract>(
     () => PaywallService(premiumAccessContract: sl<PremiumAccessContract>()),
+  );
+  sl.registerLazySingleton<SceneReadinessContract>(
+    () => SceneReadinessService(
+      notificationReadinessContract: sl<NotificationReadinessContract>(),
+      premiumAccessContract: sl<PremiumAccessContract>(),
+    ),
+  );
+  sl.registerLazySingleton<WidgetSupportService>(
+    () => WidgetSupportService(
+      sceneReadinessContract: sl<SceneReadinessContract>(),
+      paywallContract: sl<PaywallContract>(),
+    ),
+  );
+  sl.registerLazySingleton<WidgetAvailabilityContract>(
+    () => sl<WidgetSupportService>(),
+  );
+  sl.registerLazySingleton<WidgetLaunchContract>(
+    () => sl<WidgetSupportService>(),
   );
   sl.registerLazySingleton<AppRouterContract>(
     () => AppRouterService(
@@ -123,24 +150,6 @@ Future<void> setupServiceLocator({required AppConfig config}) async {
     () => NotificationReadinessService(
       notificationContract: sl<NotificationContract>(),
     ),
-  );
-  sl.registerLazySingleton<SceneReadinessContract>(
-    () => SceneReadinessService(
-      notificationReadinessContract: sl<NotificationReadinessContract>(),
-      premiumAccessContract: sl<PremiumAccessContract>(),
-    ),
-  );
-  sl.registerLazySingleton<WidgetSupportService>(
-    () => WidgetSupportService(
-      sceneReadinessContract: sl<SceneReadinessContract>(),
-      paywallContract: sl<PaywallContract>(),
-    ),
-  );
-  sl.registerLazySingleton<WidgetAvailabilityContract>(
-    () => sl<WidgetSupportService>(),
-  );
-  sl.registerLazySingleton<WidgetLaunchContract>(
-    () => sl<WidgetSupportService>(),
   );
   sl.registerLazySingleton<AudioLanguagePackManagerContract>(
     () => AudioLanguagePackManagerService(

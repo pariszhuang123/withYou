@@ -15,12 +15,16 @@ import 'package:with_you/models/playable_audio_source.dart';
 import 'package:with_you/services/app_router_service.dart';
 
 class _TestAppLocaleResolverContract implements AppLocaleResolverContract {
+  _TestAppLocaleResolverContract([this.locale = const Locale('en')]);
+
+  final Locale locale;
+
   @override
   Locale resolve({
     required List<Locale>? preferredLocales,
     required List<Locale> supportedLocales,
   }) {
-    return const Locale('en');
+    return locale;
   }
 }
 
@@ -401,6 +405,7 @@ void main() {
     SceneReadinessContract? sceneReadiness,
     _TestPaywallContract? paywallContract,
     Future<void> Function()? onCallCompletedExit,
+    Locale locale = const Locale('en'),
   }) {
     final appRouterContract = AppRouterService(
       appName: 'With You',
@@ -413,7 +418,7 @@ void main() {
 
     return WithYouApp(
       config: AppConfig(environment: AppEnvironment.prod),
-      appLocaleResolverContract: _TestAppLocaleResolverContract(),
+      appLocaleResolverContract: _TestAppLocaleResolverContract(locale),
       appStateContract: appState,
       appRouterContract: appRouterContract,
       audioLanguagePackManagerContract: manager,
@@ -452,15 +457,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Audio language'), findsWidgets);
-    expect(find.text('Upgrade to premium'), findsOneWidget);
+    expect(find.text('Unlock Premium'), findsOneWidget);
+    expect(find.text('Home-screen widget'), findsNothing);
     expect(find.text('Notifications'), findsOneWidget);
-    expect(
-      find.text(
-        'English and Simplified Chinese are ready offline. Korean downloads will come later.',
-      ),
-      findsOneWidget,
-    );
     expect(find.textContaining('Traditional Chinese'), findsNothing);
+    expect(find.text('English is ready offline.'), findsNothing);
   });
 
   testWidgets(
@@ -547,13 +548,48 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Open settings'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    final audioDropdown = find.byType(DropdownButtonFormField<String>);
+    await tester.ensureVisible(audioDropdown);
+    await tester.tap(audioDropdown);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('English'), findsWidgets);
     expect(find.textContaining('Simplified Chinese'), findsWidgets);
     expect(find.textContaining('Traditional Chinese'), findsNothing);
     expect(manager.downloaded, isFalse);
+  });
+
+  testWidgets('settings renames Chinese to 繁体字 for zh_TW locale', (
+    tester,
+  ) async {
+    final manager = _TestAudioLanguagePackManagerContract();
+    final coordinator = _TestCallFlowCoordinatorContract();
+    final appState = _TestAppStateContract();
+    final notificationReadiness = _TestNotificationReadinessContract();
+    final premiumAccess = _TestPremiumAccessContract(appState);
+
+    await tester.pumpWidget(
+      buildApp(
+        manager: manager,
+        coordinator: coordinator,
+        appState: appState,
+        notificationReadiness: notificationReadiness,
+        premiumAccess: premiumAccess,
+        locale: const Locale('zh', 'TW'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Open settings'));
+    await tester.pumpAndSettle();
+
+    final audioDropdown = find.byType(DropdownButtonFormField<String>);
+    await tester.ensureVisible(audioDropdown);
+    await tester.tap(audioDropdown);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('繁体字'), findsWidgets);
+    expect(find.textContaining('Simplified Chinese'), findsNothing);
   });
 
   testWidgets('starting the gentle scenario opens the call screen', (

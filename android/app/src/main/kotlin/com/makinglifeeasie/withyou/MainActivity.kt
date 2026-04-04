@@ -15,6 +15,10 @@ class MainActivity : FlutterActivity() {
             activity = this,
             flutterEngine = flutterEngine,
         )
+        WidgetVisualStatePlatformBridge.configure(
+            context = this,
+            flutterEngine = flutterEngine,
+        )
         NotificationPlatformBridge.handleLaunchIntent(this, intent)
         WidgetLaunchPlatformBridge.handleLaunchIntent(this, intent)
     }

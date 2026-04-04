@@ -5,6 +5,7 @@ import 'package:with_you/config/app_config.dart';
 import 'package:with_you/config/app_environment.dart';
 import 'package:with_you/contracts/app_contracts.dart';
 import 'package:with_you/contracts/call_flow_contracts.dart';
+import 'package:with_you/contracts/commerce_contracts.dart';
 import 'package:with_you/contracts/platform_contracts.dart';
 import 'package:with_you/contracts/readiness_contracts.dart';
 import 'package:with_you/di/bootstrap.dart';
@@ -100,6 +101,35 @@ class _TestAppNotificationLaunchService extends AppNotificationLaunchService {
   void start() {
     startCount++;
   }
+}
+
+class _TestWidgetVisualStateContract implements WidgetVisualStateContract {
+  int syncCount = 0;
+
+  @override
+  Future<void> syncPremiumAccess({required bool isActive}) async {
+    syncCount++;
+  }
+}
+
+class _TestPremiumAccessContract implements PremiumAccessContract {
+  int refreshCount = 0;
+
+  @override
+  Future<PremiumAccessState> getAccessState() async {
+    return PremiumAccessState.inactive;
+  }
+
+  @override
+  Future<void> recordPurchase() async {}
+
+  @override
+  Future<void> refresh() async {
+    refreshCount++;
+  }
+
+  @override
+  Future<void> restorePurchases() async {}
 }
 
 class _TestAppWidgetLaunchService extends AppWidgetLaunchService {
@@ -204,21 +234,29 @@ void main() {
       final coordinator = _TestCallFlowCoordinatorContract();
       final notificationLaunch = _TestAppNotificationLaunchService();
       final widgetLaunch = _TestAppWidgetLaunchService();
+      final premiumAccess = _TestPremiumAccessContract();
 
       await sl.unregister<NotificationContract>();
       await sl.unregister<CallFlowCoordinatorContract>();
       await sl.unregister<AppNotificationLaunchService>();
       await sl.unregister<AppWidgetLaunchService>();
+      await sl.unregister<WidgetVisualStateContract>();
+      await sl.unregister<PremiumAccessContract>();
 
       sl.registerSingleton<NotificationContract>(notificationContract);
       sl.registerSingleton<CallFlowCoordinatorContract>(coordinator);
       sl.registerSingleton<AppNotificationLaunchService>(notificationLaunch);
       sl.registerSingleton<AppWidgetLaunchService>(widgetLaunch);
+      sl.registerSingleton<WidgetVisualStateContract>(
+        _TestWidgetVisualStateContract(),
+      );
+      sl.registerSingleton<PremiumAccessContract>(premiumAccess);
 
       await app.startupWarmup!.call();
 
       expect(notificationLaunch.startCount, 1);
       expect(widgetLaunch.startCount, 1);
+      expect(premiumAccess.refreshCount, 1);
       expect(notificationContract.initializeCount, 1);
       expect(coordinator.initializeCount, 1);
     },

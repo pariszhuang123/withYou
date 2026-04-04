@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.view.View
 import android.widget.RemoteViews
 
 class HomeLaunchWidgetProvider : AppWidgetProvider() {
@@ -36,10 +37,33 @@ class HomeLaunchWidgetProvider : AppWidgetProvider() {
     }
 
     private fun buildRemoteViews(context: Context): RemoteViews {
+        val isPremiumActive = WidgetVisualStatePlatformBridge.isPremiumActive(context)
         return RemoteViews(context.packageName, R.layout.home_launch_widget).apply {
             setOnClickPendingIntent(
                 R.id.widget_logo_button,
                 buildLaunchPendingIntent(context),
+            )
+            setInt(
+                R.id.widget_logo,
+                "setImageAlpha",
+                if (isPremiumActive) 255 else 110,
+            )
+            setViewVisibility(
+                R.id.widget_lock_scrim,
+                if (isPremiumActive) View.GONE else View.VISIBLE,
+            )
+            setViewVisibility(
+                R.id.widget_lock_badge,
+                if (isPremiumActive) View.GONE else View.VISIBLE,
+            )
+            setInt(
+                R.id.widget_logo_button,
+                "setBackgroundResource",
+                if (isPremiumActive) {
+                    R.drawable.home_launch_widget_background
+                } else {
+                    R.drawable.home_launch_widget_background_locked
+                },
             )
         }
     }
@@ -66,12 +90,14 @@ class HomeLaunchWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun updateAllWidgets(context: Context) {
-        val manager = AppWidgetManager.getInstance(context)
-        val componentName = ComponentName(context, HomeLaunchWidgetProvider::class.java)
-        val widgetIds = manager.getAppWidgetIds(componentName)
-        if (widgetIds.isNotEmpty()) {
-            onUpdate(context, manager, widgetIds)
+    companion object {
+        fun updateAllWidgets(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val componentName = ComponentName(context, HomeLaunchWidgetProvider::class.java)
+            val widgetIds = manager.getAppWidgetIds(componentName)
+            if (widgetIds.isNotEmpty()) {
+                HomeLaunchWidgetProvider().onUpdate(context, manager, widgetIds)
+            }
         }
     }
 }

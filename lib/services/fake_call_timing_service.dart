@@ -174,7 +174,7 @@ class FakeCallTimingService implements FakeCallTimingContract {
 
     _cancelMissedTimer();
     await audioPlaybackContract.stop();
-    await _onStageResolved();
+    await _completeFlowAfterDecline();
   }
 
   @override
@@ -234,7 +234,6 @@ class FakeCallTimingService implements FakeCallTimingContract {
       return;
     }
 
-    _setState(FakeCallState.awaitingNextStage);
     final nextStage = _currentStage + 1;
     final delay = _calculateFollowUpDelayForScenario(
       scenario: scenario,
@@ -242,22 +241,18 @@ class FakeCallTimingService implements FakeCallTimingContract {
     );
     _pendingFollowUpStage = nextStage;
     _nextStageReadyAt = DateTime.now().add(delay);
+    _setState(FakeCallState.awaitingNextStage);
+  }
 
-    await notificationContract.scheduleFollowUp(
-      sessionId: sessionId,
-      scenario: scenario,
-      stage: nextStage,
-      delay: delay,
-      title: contentResolverContract.resolveCallerName(
-        scenario: scenario,
-        localeTag: localeTagProvider(),
-      ),
-      body: contentResolverContract.resolveFollowUpNotificationBody(
-        scenario: scenario,
-        stage: nextStage,
-        localeTag: localeTagProvider(),
-      ),
-    );
+  Future<void> _completeFlowAfterDecline() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) {
+      throw StateError('Flow state is incomplete');
+    }
+
+    _clearPendingFollowUp();
+    _setState(FakeCallState.completed);
+    await notificationContract.cancelAll(sessionId);
   }
 
   int _maxStageFor(Scenario scenario) {

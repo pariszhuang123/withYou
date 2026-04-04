@@ -73,8 +73,8 @@ abstract class FakeCallTimingContract {
 - `presence` has Stage 1 only
 - `socialPull` has Stages 1 to 3
 - `exitPressure` has Stages 1 to 3
-- decline does not cancel remaining stages
-- missed behaves the same as decline
+- explicit decline cancels remaining stages and completes the flow
+- missed advances using the same follow-up timing as an accepted or ended stage
 - end stops active playback and resolves the current stage immediately
 
 ## Timing Rules

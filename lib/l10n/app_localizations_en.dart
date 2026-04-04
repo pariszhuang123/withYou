@@ -1,10 +1,10 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
+/// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
@@ -13,6 +13,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings => 'Settings';
+
+  @override
+  String get appLogoSemanticLabel => 'withYou app logo';
+
+  @override
+  String get homeOpenSettingsSemanticLabel => 'Open settings';
+
+  @override
+  String get homeSupportStyleTitle => 'Choose support style';
+
+  @override
+  String get homeSupportStyleGentle => 'Gentle';
+
+  @override
+  String get homeSupportStyleSteady => 'Steady';
+
+  @override
+  String get homeSupportStyleUrgent => 'Urgent';
 
   @override
   String get scenarioSelector => 'Select Scenario';
@@ -88,13 +106,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsSectionHelper => 'Needed for Steady and Urgent.';
 
   @override
+  String get notificationsPermissionDialogTitle => 'Turn on notifications';
+
+  @override
+  String get notificationsPermissionDialogBody =>
+      'Steady and urgent need notifications before the follow-up calls can arrive.';
+
+  @override
+  String get notificationsPermissionDialogNotNow => 'Not now';
+
+  @override
+  String get notificationsPermissionDialogContinue => 'Continue';
+
+  @override
+  String get notificationsPermissionStillOff => 'Notifications are still off.';
+
+  @override
   String get homeTriggerHint => 'Tap the logo to start';
 
   @override
   String get homeStartCallSemanticLabel => 'Start selected support call';
 
   @override
-  String get upgradeToPremium => 'Upgrade to premium';
+  String get upgradeToPremium => 'Unlock Premium';
 
   @override
   String get premiumActive => 'Premium active';
@@ -104,7 +138,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Premium is active. You can use all features.';
 
   @override
-  String get paywallTitle => 'Upgrade to premium';
+  String get paywallTitle => 'Unlock Premium';
 
   @override
   String get paywallHeadline => 'Unlock steady and urgent follow-up calls';
@@ -115,10 +149,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paywallStoreNote =>
-      'Premium keeps steady, urgent, and widget support ready when you need it.';
+      'One-time purchase. Premium keeps steady, urgent, and widget support ready when you need it.';
 
   @override
-  String get paywallSeePrice => 'Upgrade to premium';
+  String get paywallSeePrice => 'See price';
 
   @override
   String get paywallRestore => 'Restore purchase';
@@ -148,7 +182,75 @@ class AppLocalizationsEn extends AppLocalizations {
       'Trigger your selected support call from the home screen with one touch when you need it fast.';
 
   @override
+  String get widgetSetupTitle => 'Home-screen widget';
+
+  @override
+  String get widgetSetupLockedBody =>
+      'Unlock Premium to add a one-tap widget that starts your selected support call.';
+
+  @override
+  String get widgetSetupReadyBody =>
+      'Add the widget from your phone\'s widget gallery for one-tap support when you need it fast.';
+
+  @override
+  String get widgetSetupUnavailableBody =>
+      'Home-screen widgets are unavailable on this device.';
+
+  @override
+  String get widgetSetupUnlockAction => 'Unlock one-tap widget';
+
+  @override
+  String get widgetSetupReadyLabel => 'Widget ready';
+
+  @override
+  String get paywallBenefitPresenceBody =>
+      'One immediate call for a light interruption.';
+
+  @override
   String get notificationFollowUpBody => 'Tap to answer your support call.';
+
+  @override
+  String get audioLanguageUpdateAvailable => 'Update available';
+
+  @override
+  String get languageTraditionalChinese => '繁体字';
+
+  @override
+  String get awaitingStageTitle => 'Follow-up scheduled';
+
+  @override
+  String awaitingStageBody(Object stage) {
+    return 'Stage $stage is waiting on the local notification timer.';
+  }
+
+  @override
+  String get awaitingStageReady => 'The next follow-up can open now.';
+
+  @override
+  String awaitingStageCountdown(Object remaining) {
+    return 'Ready in $remaining';
+  }
+
+  @override
+  String get callAvatarSemanticLabel => 'Caller avatar';
+
+  @override
+  String get callActionHang => 'Hang';
+
+  @override
+  String get callActionDial => 'Dial';
+
+  @override
+  String get callActionEnd => 'End';
+
+  @override
+  String get callDeclineSemanticLabel => 'Decline support call';
+
+  @override
+  String get callAcceptSemanticLabel => 'Accept support call';
+
+  @override
+  String get callEndSemanticLabel => 'End support call';
 
   @override
   String get callerNamePresence => 'Tommy';

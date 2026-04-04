@@ -33,6 +33,19 @@ class WidgetSupportService
     required LaunchSurface surface,
     required Scenario selectedScenario,
   }) async {
+    if (surface == LaunchSurface.homeScreenWidget) {
+      final paywallDecision = await _paywallContract.evaluate(
+        surface: PaywallSurface.widgetSetup,
+      );
+      if (paywallDecision != PaywallDecision.hidden) {
+        return WidgetLaunchPlan(
+          outcome: WidgetLaunchOutcome.openPremiumScreen,
+          requestedScenario: selectedScenario,
+          resolvedScenario: selectedScenario,
+        );
+      }
+    }
+
     final readiness = await _sceneReadinessContract.getReadiness(
       selectedScenario,
     );
@@ -45,13 +58,11 @@ class WidgetSupportService
       );
     }
 
-    if (surface == LaunchSurface.appButton &&
-        readiness.state == SceneReadinessState.lockedPremium) {
+    if (readiness.state == SceneReadinessState.lockedPremium) {
       final paywallDecision = await _paywallContract.evaluate(
         surface: PaywallSurface.widgetSetup,
       );
-      if (paywallDecision != PaywallDecision.hidden &&
-          !readiness.fallsBackToPresence) {
+      if (paywallDecision != PaywallDecision.hidden) {
         return WidgetLaunchPlan(
           outcome: WidgetLaunchOutcome.openPremiumScreen,
           requestedScenario: selectedScenario,

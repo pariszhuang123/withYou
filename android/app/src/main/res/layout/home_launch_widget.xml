@@ -7,7 +7,7 @@
     android:clickable="true"
     android:contentDescription="@string/home_launch_widget_description"
     android:focusable="true"
-    android:padding="20dp">
+    android:padding="8dp">
 
     <ImageView
         android:id="@+id/widget_logo"
@@ -15,7 +15,28 @@
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
         android:contentDescription="@string/home_launch_widget_description"
-        android:padding="12dp"
+        android:padding="4dp"
         android:scaleType="fitCenter"
-        android:src="@mipmap/ic_launcher" />
+        android:src="@drawable/widget_logo" />
+
+    <ImageView
+        android:id="@+id/widget_lock_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_lock_scrim"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/widget_lock_badge"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="10dp"
+        android:background="@drawable/widget_lock_badge_background"
+        android:padding="5dp"
+        android:src="@drawable/widget_lock_icon"
+        android:visibility="gone" />
 </FrameLayout>

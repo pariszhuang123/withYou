@@ -68,4 +68,6 @@ abstract class WidgetLaunchContract {
 
 - Widgets must never bypass scenario safety/readiness checks.
 - Launch planning can resolve to fallback behavior.
+- Launch planning may resolve to `openPremiumScreen` when a widget tap targets a
+  premium-gated capability.
 - Direct widget launch support is explicitly surfaced, not inferred.

@@ -37,9 +37,9 @@ class _TestTimingContract implements FakeCallTimingContract {
 
   @override
   Future<void> declineCurrentStage() async {
-    currentState = FakeCallState.awaitingNextStage;
-    pendingFollowUpStage = currentStage + 1;
-    nextStageReadyAt = DateTime.now();
+    currentState = FakeCallState.completed;
+    pendingFollowUpStage = null;
+    nextStageReadyAt = null;
     _controller.add(currentState);
   }
 
@@ -64,6 +64,8 @@ class _TestTimingContract implements FakeCallTimingContract {
     currentScenario = scenario;
     currentStage = stage;
     currentState = FakeCallState.awaitingNextStage;
+    pendingFollowUpStage = currentStage + 1;
+    nextStageReadyAt = DateTime.now();
     _controller.add(currentState);
   }
 
@@ -279,7 +281,11 @@ void main() {
 
     await service.startFlow(Scenario.socialPull);
     await Future<void>.delayed(Duration.zero);
-    await timing.declineCurrentStage();
+    await timing.handleMissedStage(
+      sessionId: service.currentSnapshot.sessionId!,
+      scenario: Scenario.socialPull,
+      stage: 1,
+    );
     await Future<void>.delayed(Duration.zero);
 
     expect(pendingRepository.records.single.stage, 2);
@@ -390,7 +396,11 @@ void main() {
       );
 
       await service.startFlow(Scenario.socialPull);
-      await timing.declineCurrentStage();
+      await timing.handleMissedStage(
+        sessionId: service.currentSnapshot.sessionId!,
+        scenario: Scenario.socialPull,
+        stage: 1,
+      );
       await Future<void>.delayed(Duration.zero);
 
       final sessionId = service.currentSnapshot.sessionId!;

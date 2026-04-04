@@ -93,13 +93,13 @@ class _TestCoordinatorContract implements CallFlowCoordinatorContract {
   @override
   Future<void> declineCurrentStage() async {
     currentSnapshot = CallFlowSnapshot(
-      flowState: FakeCallState.awaitingNextStage,
+      flowState: FakeCallState.completed,
       scenario: currentSnapshot.scenario,
       currentStage: currentSnapshot.currentStage,
       callerName: currentSnapshot.callerName,
       sessionId: currentSnapshot.sessionId,
-      followUpStage: currentSnapshot.currentStage + 1,
-      followUpReadyAt: DateTime.now(),
+      followUpStage: null,
+      followUpReadyAt: null,
     );
     _controller.add(currentSnapshot);
   }
@@ -244,7 +244,16 @@ void main() {
 
       await cubit.startFlow();
       await Future<void>.delayed(Duration.zero);
-      await cubit.decline();
+      coordinator.currentSnapshot = CallFlowSnapshot(
+        flowState: FakeCallState.awaitingNextStage,
+        scenario: Scenario.presence,
+        currentStage: 1,
+        callerName: 'Xiao Chen',
+        sessionId: 'session-1',
+        followUpStage: 2,
+        followUpReadyAt: DateTime.now(),
+      );
+      coordinator._controller.add(coordinator.currentSnapshot);
       await Future<void>.delayed(Duration.zero);
       await cubit.triggerFollowUp();
       await Future<void>.delayed(Duration.zero);
