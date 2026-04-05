@@ -450,8 +450,8 @@ void main() {
 
     expect(find.text('Release channel: development'), findsNothing);
     expect(find.text('APP_ENV=dev'), findsNothing);
-    expect(find.text('Tap the logo to start'), findsOneWidget);
-    expect(find.text('Choose support style'), findsOneWidget);
+    expect(find.text('Tap when you need me.'), findsOneWidget);
+    expect(find.text('What do you need right now?'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Open settings'));
     await tester.pumpAndSettle();
@@ -592,7 +592,7 @@ void main() {
     expect(find.textContaining('Simplified Chinese'), findsNothing);
   });
 
-  testWidgets('starting the gentle scenario opens the call screen', (
+  testWidgets('starting the stay with me scenario opens the call screen', (
     tester,
   ) async {
     final manager = _TestAudioLanguagePackManagerContract();
@@ -711,11 +711,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Steady'));
+      await tester.tap(find.text('🕒 Ease me out'));
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Unlock steady and urgent follow-up calls'),
+        find.text('Unlock follow-up calls for 🕒 Ease me out and 🚪 Get me out'),
         findsOneWidget,
       );
 
@@ -758,7 +758,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Urgent'));
+      await tester.tap(find.text('🚪 Get me out'));
       await tester.pumpAndSettle();
 
       expect(find.text('Turn on notifications'), findsOneWidget);
@@ -768,7 +768,7 @@ void main() {
 
       expect(notificationReadiness.requestCount, 1);
       expect(
-        find.text('Unlock steady and urgent follow-up calls'),
+        find.text('Unlock follow-up calls for 🕒 Ease me out and 🚪 Get me out'),
         findsOneWidget,
       );
 
@@ -786,7 +786,7 @@ void main() {
   );
 
   testWidgets(
-    'rejecting notification for urgent bounces selection back to gentle',
+    'rejecting notification for get me out bounces selection back to stay with me',
     (tester) async {
       final manager = _TestAudioLanguagePackManagerContract();
       final coordinator = _TestCallFlowCoordinatorContract();
@@ -810,7 +810,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Urgent'));
+      await tester.tap(find.text('🚪 Get me out'));
       await tester.pumpAndSettle();
 
       expect(find.text('Turn on notifications'), findsOneWidget);
@@ -827,7 +827,7 @@ void main() {
   );
 
   testWidgets(
-    'dismissing paywall for steady bounces selection back to gentle',
+    'dismissing paywall for ease me out bounces selection back to stay with me',
     (tester) async {
       final manager = _TestAudioLanguagePackManagerContract();
       final coordinator = _TestCallFlowCoordinatorContract();
@@ -850,11 +850,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Steady'));
+      await tester.tap(find.text('🕒 Ease me out'));
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Unlock steady and urgent follow-up calls'),
+        find.text('Unlock follow-up calls for 🕒 Ease me out and 🚪 Get me out'),
         findsOneWidget,
       );
       await tester.pageBack();
@@ -888,7 +888,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Steady'));
+    await tester.tap(find.text('🕒 Ease me out'));
     await tester.pumpAndSettle();
     final restoreButton = find.text('Restore purchase');
     await tester.ensureVisible(restoreButton);

@@ -21,28 +21,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenSettingsSemanticLabel => 'Open settings';
 
   @override
-  String get homeSupportStyleTitle => 'Choose support style';
+  String get homeSupportStyleTitle => 'What do you need right now?';
 
   @override
-  String get homeSupportStyleGentle => 'Gentle';
+  String get homeSupportStyleGentle => '👀 Stay with me';
 
   @override
-  String get homeSupportStyleSteady => 'Steady';
+  String get homeSupportStyleSteady => '🕒 Ease me out';
 
   @override
-  String get homeSupportStyleUrgent => 'Urgent';
+  String get homeSupportStyleUrgent => '🚪 Get me out';
 
   @override
   String get scenarioSelector => 'Select Scenario';
 
   @override
-  String get scenarioPresence => 'Presence';
+  String get scenarioPresence => '👀 Stay with me';
 
   @override
-  String get scenarioSocialPull => 'Social Pull';
+  String get scenarioSocialPull => '🕒 Ease me out';
 
   @override
-  String get scenarioExitPressure => 'Exit Pressure';
+  String get scenarioExitPressure => '🚪 Get me out';
 
   @override
   String get incomingCall => 'Incoming call';
@@ -103,14 +103,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsSectionManage => 'Open system settings';
 
   @override
-  String get notificationsSectionHelper => 'Needed for Steady and Urgent.';
+  String get notificationsSectionHelper =>
+      'Needed for 🕒 Ease me out and 🚪 Get me out.';
 
   @override
   String get notificationsPermissionDialogTitle => 'Turn on notifications';
 
   @override
   String get notificationsPermissionDialogBody =>
-      'Steady and urgent need notifications before the follow-up calls can arrive.';
+      '🕒 Ease me out and 🚪 Get me out need notifications before follow-up calls can come through.';
 
   @override
   String get notificationsPermissionDialogNotNow => 'Not now';
@@ -122,7 +123,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsPermissionStillOff => 'Notifications are still off.';
 
   @override
-  String get homeTriggerHint => 'Tap the logo to start';
+  String get homeTriggerHint => 'Tap when you need me.';
 
   @override
   String get homeStartCallSemanticLabel => 'Start selected support call';
@@ -141,15 +142,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallTitle => 'Unlock Premium';
 
   @override
-  String get paywallHeadline => 'Unlock steady and urgent follow-up calls';
+  String get paywallHeadline =>
+      'Unlock follow-up calls for 🕒 Ease me out and 🚪 Get me out';
 
   @override
   String get paywallBody =>
-      'Get extra support when you are stuck: steady follow-up calls keep the interruption going, urgent follow-up calls help you get out quickly, and the home-screen widget lets you trigger a call with one touch.';
+      'Get extra support when you need it: 🕒 Ease me out keeps the interruption going, 🚪 Get me out helps you leave faster, and the home-screen widget lets you trigger a call with one touch.';
 
   @override
   String get paywallStoreNote =>
-      'One-time purchase. Premium keeps steady, urgent, and widget support ready when you need it.';
+      'One-time purchase. Premium keeps 🕒 Ease me out, 🚪 Get me out, and widget support ready when you need it.';
 
   @override
   String get paywallSeePrice => 'See price';
@@ -161,18 +163,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallRestoreFailed => 'No premium purchase was restored.';
 
   @override
-  String get paywallBenefitSocialPullTitle => 'Steady support';
+  String get paywallBenefitSocialPullTitle => '🕒 Ease me out';
 
   @override
   String get paywallBenefitSocialPullBody =>
       'Start a call now, then keep the interruption going with two follow-up calls.';
 
   @override
-  String get paywallBenefitExitPressureTitle => 'Urgent support';
+  String get paywallBenefitExitPressureTitle => '🚪 Get me out';
 
   @override
   String get paywallBenefitExitPressureBody =>
-      'Use a faster sequence of follow-up calls when you want to get out quickly.';
+      'Use a faster sequence of follow-up calls when you need to leave now.';
 
   @override
   String get paywallBenefitWidgetTitle => 'Home-screen widget';
@@ -204,7 +206,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paywallBenefitPresenceBody =>
-      'One immediate call for a light interruption.';
+      'One immediate call when you just need someone with you.';
 
   @override
   String get notificationFollowUpBody => 'Tap to answer your support call.';
@@ -216,7 +218,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageTraditionalChinese => '繁体字';
 
   @override
-  String get awaitingStageTitle => 'Follow-up scheduled';
+  String get awaitingStageTitle => 'I’ll check in again soon.';
 
   @override
   String awaitingStageBody(Object stage) {

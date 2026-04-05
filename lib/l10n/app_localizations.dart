@@ -127,25 +127,25 @@ abstract class AppLocalizations {
   /// No description provided for @homeSupportStyleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose support style'**
+  /// **'What do you need right now?'**
   String get homeSupportStyleTitle;
 
   /// No description provided for @homeSupportStyleGentle.
   ///
   /// In en, this message translates to:
-  /// **'Gentle'**
+  /// **'👀 Stay with me'**
   String get homeSupportStyleGentle;
 
   /// No description provided for @homeSupportStyleSteady.
   ///
   /// In en, this message translates to:
-  /// **'Steady'**
+  /// **'🕒 Ease me out'**
   String get homeSupportStyleSteady;
 
   /// No description provided for @homeSupportStyleUrgent.
   ///
   /// In en, this message translates to:
-  /// **'Urgent'**
+  /// **'🚪 Get me out'**
   String get homeSupportStyleUrgent;
 
   /// No description provided for @scenarioSelector.
@@ -157,19 +157,19 @@ abstract class AppLocalizations {
   /// No description provided for @scenarioPresence.
   ///
   /// In en, this message translates to:
-  /// **'Presence'**
+  /// **'👀 Stay with me'**
   String get scenarioPresence;
 
   /// No description provided for @scenarioSocialPull.
   ///
   /// In en, this message translates to:
-  /// **'Social Pull'**
+  /// **'🕒 Ease me out'**
   String get scenarioSocialPull;
 
   /// No description provided for @scenarioExitPressure.
   ///
   /// In en, this message translates to:
-  /// **'Exit Pressure'**
+  /// **'🚪 Get me out'**
   String get scenarioExitPressure;
 
   /// No description provided for @incomingCall.
@@ -283,7 +283,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsSectionHelper.
   ///
   /// In en, this message translates to:
-  /// **'Needed for Steady and Urgent.'**
+  /// **'Needed for 🕒 Ease me out and 🚪 Get me out.'**
   String get notificationsSectionHelper;
 
   /// No description provided for @notificationsPermissionDialogTitle.
@@ -295,7 +295,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsPermissionDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Steady and urgent need notifications before the follow-up calls can arrive.'**
+  /// **'🕒 Ease me out and 🚪 Get me out need notifications before follow-up calls can come through.'**
   String get notificationsPermissionDialogBody;
 
   /// No description provided for @notificationsPermissionDialogNotNow.
@@ -319,7 +319,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTriggerHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap the logo to start'**
+  /// **'Tap when you need me.'**
   String get homeTriggerHint;
 
   /// No description provided for @homeStartCallSemanticLabel.
@@ -355,7 +355,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Unlock steady and urgent follow-up calls'**
+  /// **'Unlock follow-up calls for 🕒 Ease me out and 🚪 Get me out'**
   String get paywallHeadline;
 
   /// No description provided for @paywallBody.
@@ -391,7 +391,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallBenefitSocialPullTitle.
   ///
   /// In en, this message translates to:
-  /// **'Steady support'**
+  /// **'🕒 Ease me out'**
   String get paywallBenefitSocialPullTitle;
 
   /// No description provided for @paywallBenefitSocialPullBody.
@@ -403,7 +403,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallBenefitExitPressureTitle.
   ///
   /// In en, this message translates to:
-  /// **'Urgent support'**
+  /// **'🚪 Get me out'**
   String get paywallBenefitExitPressureTitle;
 
   /// No description provided for @paywallBenefitExitPressureBody.
@@ -487,7 +487,7 @@ abstract class AppLocalizations {
   /// No description provided for @awaitingStageTitle.
   ///
   /// In en, this message translates to:
-  /// **'Follow-up scheduled'**
+  /// **'I’ll check in again soon.'**
   String get awaitingStageTitle;
 
   /// No description provided for @awaitingStageBody.

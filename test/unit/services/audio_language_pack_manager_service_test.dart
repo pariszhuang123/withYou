@@ -78,6 +78,8 @@ void main() {
   test(
     'ensureSelectedLocale collapses traditional Chinese locales to zh',
     () async {
+      availableAssets.add('assets/audio/zh/presence/stage_1.m4a');
+
       final localeTag = await service.ensureSelectedLocale(const <Locale>[
         Locale('zh', 'TW'),
       ]);
@@ -89,12 +91,18 @@ void main() {
 
   test('listAvailableLanguages only exposes bundled locales', () async {
     await appStateRepository.setSelectedAudioLocaleTag('zh');
+    for (final descriptor
+        in const ContentResolverService().listRequiredAudio()) {
+      availableAssets.add(
+        'assets/audio/zh/${descriptor.scenarioDirectory}/stage_${descriptor.stage}.m4a',
+      );
+    }
 
     final languages = await service.listAvailableLanguages();
 
     expect(
       languages.map((entry) => entry.language.localeTag).toList(),
-      <String>['en', 'zh'],
+      <String>['zh'],
     );
     expect(
       languages.every(
@@ -180,6 +188,25 @@ void main() {
         throwsA(isA<StateError>()),
       );
       expect(logger.errors.single, contains('No local audio source available'));
+    },
+  );
+
+  test(
+    'ensureSelectedLocale falls back to bundled zh when english audio pack is incomplete',
+    () async {
+      for (final descriptor
+          in const ContentResolverService().listRequiredAudio()) {
+        availableAssets.add(
+          'assets/audio/zh/${descriptor.scenarioDirectory}/stage_${descriptor.stage}.m4a',
+        );
+      }
+
+      final localeTag = await service.ensureSelectedLocale(const <Locale>[
+        Locale('en'),
+      ]);
+
+      expect(localeTag, 'zh');
+      expect(await appStateRepository.getSelectedAudioLocaleTag(), 'zh');
     },
   );
 }

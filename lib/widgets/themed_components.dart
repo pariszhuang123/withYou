@@ -156,6 +156,90 @@ class ThemedCard extends StatelessWidget {
   }
 }
 
+class ThemedSelectionCard extends StatelessWidget {
+  const ThemedSelectionCard({
+    super.key,
+    required this.title,
+    required this.semanticLabel,
+    required this.onPressed,
+    this.leading,
+    this.trailing,
+    this.selected = false,
+  });
+
+  final String title;
+  final String semanticLabel;
+  final VoidCallback? onPressed;
+  final Widget? leading;
+  final Widget? trailing;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.appSpacing;
+    final sizes = theme.appSizes;
+    final colors = theme.appColors;
+
+    final backgroundColor = selected
+        ? theme.colorScheme.primaryContainer
+        : colors.surfaceSecondary;
+    final foregroundColor = selected
+        ? theme.colorScheme.onPrimaryContainer
+        : colors.textPrimary;
+    final borderColor = selected
+        ? theme.colorScheme.primary
+        : colors.borderSubtle;
+
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      selected: selected,
+      label: semanticLabel,
+      child: Card(
+        color: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(sizes.cardRadius),
+          side: BorderSide(color: borderColor, width: selected ? 2 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: EdgeInsets.all(spacing.medium),
+            child: Row(
+              children: [
+                if (leading != null) ...[
+                  IconTheme(
+                    data: IconThemeData(color: foregroundColor),
+                    child: leading!,
+                  ),
+                  SizedBox(width: spacing.medium),
+                ],
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: foregroundColor,
+                    ),
+                  ),
+                ),
+                if (trailing != null) ...[
+                  SizedBox(width: spacing.medium),
+                  IconTheme(
+                    data: IconThemeData(color: foregroundColor),
+                    child: trailing!,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ThemedSurfacePanel extends StatelessWidget {
   const ThemedSurfacePanel({
     super.key,

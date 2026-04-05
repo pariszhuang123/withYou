@@ -51,9 +51,18 @@ Required cases:
 | # | Test | Expected |
 |---|------|----------|
 | W1 | Scenario selector renders | Shows the currently selected scenario |
-| W2 | Scenario options render | Lists `Presence`, `Social Pull`, and `Exit Pressure` |
+| W2 | Scenario options render | Lists the locked user-facing states for the three scenarios |
 | W3 | Ringing state UI | Shows accept and decline actions |
 | W4 | In-call state UI | Shows active-call presentation only |
+
+Copy-specific checks:
+
+- the primary state selector does not use style labels such as `Gentle`,
+  `Steady`, or `Urgent`
+- the state selector keeps emoji-plus-label pairing consistent with
+  `docs/models/emoji-language-contract.md`
+- notification and paywall helper copy refer to the user-facing states or the
+  underlying scenarios consistently, without introducing extra state names
 
 ### Accessibility and design-system gate
 

@@ -234,4 +234,102 @@ void main() {
       expect(appState.selectedScenario, Scenario.exitPressure);
     },
   );
+
+  testWidgets(
+    'subsequent external call intents still route to the call screen after returning home',
+    (tester) async {
+      final appState = _TestAppStateContract();
+      final service = buildService(appState);
+
+      await tester.pumpWidget(
+        BlocProvider(
+          create: (_) => CallFlowCubit(
+            coordinator: _TestCallFlowCoordinatorContract(),
+            appStateContract: appState,
+            sceneReadinessContract: _TestSceneReadinessContract(),
+          ),
+          child: MaterialApp.router(
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: service.routerConfig,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await service.handleExternalIntent(
+        const AppLaunchIntent(
+          source: AppLaunchSource.homeScreenWidget,
+          destination: AppRouteDestination.call,
+          scenario: Scenario.socialPull,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(service.currentRoute.destination, AppRouteDestination.call);
+      expect(service.currentRoute.scenario, Scenario.socialPull);
+
+      await service.goHome();
+      await tester.pumpAndSettle();
+
+      await service.handleExternalIntent(
+        const AppLaunchIntent(
+          source: AppLaunchSource.notification,
+          destination: AppRouteDestination.call,
+          scenario: Scenario.exitPressure,
+          stage: 2,
+          sessionId: 'session-2',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(service.currentRoute.destination, AppRouteDestination.call);
+      expect(service.currentRoute.scenario, Scenario.exitPressure);
+      expect(service.currentRoute.stage, 2);
+      expect(service.currentRoute.sessionId, 'session-2');
+    },
+  );
+
+  testWidgets('call route can be dismissed after an external launch', (
+    tester,
+  ) async {
+    final appState = _TestAppStateContract();
+    final service = buildService(appState);
+
+    await tester.pumpWidget(
+      BlocProvider(
+        create: (_) => CallFlowCubit(
+          coordinator: _TestCallFlowCoordinatorContract(),
+          appStateContract: appState,
+          sceneReadinessContract: _TestSceneReadinessContract(),
+        ),
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: service.routerConfig,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await service.handleExternalIntent(
+      const AppLaunchIntent(
+        source: AppLaunchSource.homeScreenWidget,
+        destination: AppRouteDestination.call,
+        scenario: Scenario.presence,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(service.currentRoute.destination, AppRouteDestination.call);
+
+    await service.syncCallRoute(visible: false);
+    await tester.pumpAndSettle();
+
+    expect(service.currentRoute.destination, AppRouteDestination.home);
+  });
 }

@@ -29,6 +29,15 @@ supporting specifications and deprecated records.
 | `docs/quality/` | Testing strategy and CI/CD |
 | `docs/legacy/` | Deprecated or historical architecture notes |
 
+## Key Supporting Specs
+
+| Doc | Purpose |
+|---|---|
+| `docs/models/content-model.md` | Scenario-to-caller and asset mapping |
+| `docs/models/emoji-language-contract.md` | Locked user-facing state language, emoji, and microcopy rules |
+| `docs/ui/design-system.md` | Normative primitive hierarchy and accessibility rules |
+| `docs/quality/testing.md` | Required behavior and UI coverage |
+
 ## Rules
 
 - Anything under `docs/contracts/` must map to a real contract in

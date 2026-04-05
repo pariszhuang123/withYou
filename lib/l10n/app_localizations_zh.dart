@@ -21,28 +21,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeOpenSettingsSemanticLabel => 'Open settings';
 
   @override
-  String get homeSupportStyleTitle => '选择支援方式';
+  String get homeSupportStyleTitle => '你现在最需要什么？';
 
   @override
-  String get homeSupportStyleGentle => '轻柔';
+  String get homeSupportStyleGentle => '👀 Stay with me';
 
   @override
-  String get homeSupportStyleSteady => '稳定';
+  String get homeSupportStyleSteady => '🕒 Ease me out';
 
   @override
-  String get homeSupportStyleUrgent => '紧急';
+  String get homeSupportStyleUrgent => '🚪 Get me out';
 
   @override
   String get scenarioSelector => '选择场景';
 
   @override
-  String get scenarioPresence => '陪伴掩护';
+  String get scenarioPresence => '👀 Stay with me';
 
   @override
-  String get scenarioSocialPull => '柔性牵引';
+  String get scenarioSocialPull => '🕒 Ease me out';
 
   @override
-  String get scenarioExitPressure => '快速脱身';
+  String get scenarioExitPressure => '🚪 Get me out';
 
   @override
   String get incomingCall => '来电';
@@ -99,14 +99,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsSectionManage => '打开系统设置';
 
   @override
-  String get notificationsSectionHelper => '柔性牵引和快速脱身场景依赖后续来电通知。';
+  String get notificationsSectionHelper =>
+      '🕒 Ease me out 和 🚪 Get me out 需要后续来电通知。';
 
   @override
   String get notificationsPermissionDialogTitle => '开启通知';
 
   @override
   String get notificationsPermissionDialogBody =>
-      '柔性牵引和快速脱身需要先开启通知，后续来电才能按时出现。';
+      '🕒 Ease me out 和 🚪 Get me out 需要先开启通知，后续来电才能按时出现。';
 
   @override
   String get notificationsPermissionDialogNotNow => '暂不';
@@ -118,7 +119,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsPermissionStillOff => '通知仍未开启。';
 
   @override
-  String get homeTriggerHint => '点击标志即可开始';
+  String get homeTriggerHint => '需要时点一下我。';
 
   @override
   String get homeStartCallSemanticLabel => '开始当前支援来电';
@@ -136,14 +137,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallTitle => '解锁高级版';
 
   @override
-  String get paywallHeadline => '解锁柔性支援和快速支援的后续来电';
+  String get paywallHeadline => '解锁 🕒 Ease me out 和 🚪 Get me out 的后续来电';
 
   @override
   String get paywallBody =>
-      '当你被困住时，可获得更多支援：柔性支援的后续来电会持续制造打断，快速支援的后续来电能帮助你更快脱身，主屏幕小组件还能让你一键触发来电。';
+      '当你需要更多支援时：🕒 Ease me out 会把打断自然延续下去，🚪 Get me out 会帮你更快离开，主屏幕小组件还能让你一键触发来电。';
 
   @override
-  String get paywallStoreNote => '一次购买，长期使用。高级版会让柔性支援、快速支援和小组件支援在你需要时随时可用。';
+  String get paywallStoreNote =>
+      '一次购买，长期使用。高级版会让 🕒 Ease me out、🚪 Get me out 和小组件支援在你需要时随时可用。';
 
   @override
   String get paywallSeePrice => '查看价格';
@@ -155,16 +157,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallRestoreFailed => '没有恢复到高级版购买记录。';
 
   @override
-  String get paywallBenefitSocialPullTitle => '柔性支援';
+  String get paywallBenefitSocialPullTitle => '🕒 Ease me out';
 
   @override
   String get paywallBenefitSocialPullBody => '先触发一通电话，再用两通后续来电持续制造打断。';
 
   @override
-  String get paywallBenefitExitPressureTitle => '快速支援';
+  String get paywallBenefitExitPressureTitle => '🚪 Get me out';
 
   @override
-  String get paywallBenefitExitPressureBody => '当你想更快脱身时，可使用更紧凑的后续来电节奏。';
+  String get paywallBenefitExitPressureBody =>
+      '当你需要马上离开时，可使用更紧凑的后续来电节奏。';
 
   @override
   String get paywallBenefitWidgetTitle => '主屏幕小组件';
@@ -191,7 +194,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get widgetSetupReadyLabel => '小组件已就绪';
 
   @override
-  String get paywallBenefitPresenceBody => '用一通即时来电制造轻度打断。';
+  String get paywallBenefitPresenceBody => '当你只是需要有人陪着你时，用一通即时来电就够了。';
 
   @override
   String get notificationFollowUpBody => '点按即可接听你的支援来电。';
@@ -203,7 +206,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageTraditionalChinese => '繁体字';
 
   @override
-  String get awaitingStageTitle => '已安排后续来电';
+  String get awaitingStageTitle => '我会再联系你。';
 
   @override
   String awaitingStageBody(Object stage) => '第 $stage 阶段正在等待本地通知计时器。';

@@ -67,111 +67,102 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? constraints.maxHeight - (spacing.large * 2)
                       : 0,
                 ),
-                child: IntrinsicHeight(
-                  child: BlocBuilder<CallFlowCubit, CallFlowState>(
-                    builder: (context, callFlowState) {
-                      final selectedSnapshot = callFlowState
-                          .sceneReadiness[callFlowState.selectedScenario];
+                child: BlocBuilder<CallFlowCubit, CallFlowState>(
+                  builder: (context, callFlowState) {
+                    final selectedSnapshot = callFlowState
+                        .sceneReadiness[callFlowState.selectedScenario];
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ThemedCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  localizations.homeSupportStyleTitle,
-                                  style: theme.textTheme.headlineMedium,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ThemedCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                localizations.homeSupportStyleTitle,
+                                style: theme.textTheme.headlineMedium,
+                              ),
+                              SizedBox(height: spacing.large),
+                              _ScenarioSelectionCard(
+                                title: localizations.homeSupportStyleGentle,
+                                snapshot: callFlowState.sceneReadiness[
+                                    Scenario.presence],
+                                selected:
+                                    callFlowState.selectedScenario ==
+                                    Scenario.presence,
+                                onPressed: () => _selectScenario(
+                                  context,
+                                  Scenario.presence,
                                 ),
-                                SizedBox(height: spacing.large),
-                                SegmentedButton<Scenario>(
-                                  segments: <ButtonSegment<Scenario>>[
-                                    ButtonSegment<Scenario>(
-                                      value: Scenario.presence,
-                                      icon: _statusIconFor(
-                                        callFlowState.sceneReadiness[Scenario
-                                            .presence],
-                                      ),
-                                      label: Text(
-                                        localizations.homeSupportStyleGentle,
-                                      ),
-                                    ),
-                                    ButtonSegment<Scenario>(
-                                      value: Scenario.socialPull,
-                                      icon: _statusIconFor(
-                                        callFlowState.sceneReadiness[Scenario
-                                            .socialPull],
-                                      ),
-                                      label: Text(
-                                        localizations.homeSupportStyleSteady,
-                                      ),
-                                    ),
-                                    ButtonSegment<Scenario>(
-                                      value: Scenario.exitPressure,
-                                      icon: _statusIconFor(
-                                        callFlowState.sceneReadiness[Scenario
-                                            .exitPressure],
-                                      ),
-                                      label: Text(
-                                        localizations.homeSupportStyleUrgent,
-                                      ),
-                                    ),
-                                  ],
-                                  selected: <Scenario>{
-                                    callFlowState.selectedScenario,
-                                  },
-                                  onSelectionChanged: (selection) {
-                                    unawaited(
-                                      _handleScenarioSelection(
-                                        context.read<CallFlowCubit>(),
-                                        selection.first,
-                                      ),
-                                    );
-                                  },
+                              ),
+                              SizedBox(height: spacing.medium),
+                              _ScenarioSelectionCard(
+                                title: localizations.homeSupportStyleSteady,
+                                snapshot: callFlowState.sceneReadiness[
+                                    Scenario.socialPull],
+                                selected:
+                                    callFlowState.selectedScenario ==
+                                    Scenario.socialPull,
+                                onPressed: () => _selectScenario(
+                                  context,
+                                  Scenario.socialPull,
                                 ),
-                              ],
-                            ),
+                              ),
+                              SizedBox(height: spacing.medium),
+                              _ScenarioSelectionCard(
+                                title: localizations.homeSupportStyleUrgent,
+                                snapshot: callFlowState.sceneReadiness[
+                                    Scenario.exitPressure],
+                                selected:
+                                    callFlowState.selectedScenario ==
+                                    Scenario.exitPressure,
+                                onPressed: () => _selectScenario(
+                                  context,
+                                  Scenario.exitPressure,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          Center(
-                            child: GestureDetector(
-                              onTap: _isHandlingTrigger
-                                  ? null
-                                  : () => _handleTriggerPressed(
-                                      context.read<CallFlowCubit>(),
-                                      callFlowState,
-                                      selectedSnapshot,
-                                    ),
-                              child: Semantics(
-                                container: true,
-                                button: true,
-                                enabled: !_isHandlingTrigger,
-                                label: localizations.homeStartCallSemanticLabel,
-                                child: ExcludeSemantics(
-                                  child: AppLogo(
-                                    size: theme.appSizes.homeTriggerSize * 3.2,
-                                    animated: true,
+                        ),
+                        SizedBox(height: spacing.xLarge),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _isHandlingTrigger
+                                ? null
+                                : () => _handleTriggerPressed(
+                                    context.read<CallFlowCubit>(),
+                                    callFlowState,
+                                    selectedSnapshot,
                                   ),
+                            child: Semantics(
+                              container: true,
+                              button: true,
+                              enabled: !_isHandlingTrigger,
+                              label: localizations.homeStartCallSemanticLabel,
+                              child: ExcludeSemantics(
+                                child: AppLogo(
+                                  size: theme.appSizes.homeTriggerSize * 3.2,
+                                  animated: true,
                                 ),
                               ),
                             ),
                           ),
-                          SizedBox(height: spacing.medium),
-                          Text(
-                            localizations.homeTriggerHint,
-                            style: theme.textTheme.bodyLarge,
-                            textAlign: TextAlign.center,
-                          ),
-                          const Spacer(),
-                          if (callFlowState.flowState ==
-                              FakeCallState.awaitingNextStage) ...[
-                            _AwaitingStageCard(state: callFlowState),
-                          ],
+                        ),
+                        SizedBox(height: spacing.medium),
+                        Text(
+                          localizations.homeTriggerHint,
+                          style: theme.textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        if (callFlowState.flowState ==
+                            FakeCallState.awaitingNextStage) ...[
+                          SizedBox(height: spacing.xLarge),
+                          _AwaitingStageCard(state: callFlowState),
                         ],
-                      );
-                    },
-                  ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -250,6 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  void _selectScenario(BuildContext context, Scenario scenario) {
+    unawaited(
+      _handleScenarioSelection(context.read<CallFlowCubit>(), scenario),
+    );
   }
 
   Future<bool> _ensureScenarioAccess({
@@ -352,6 +349,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   SceneReadinessState _readinessFor(CallFlowState state, Scenario scenario) {
     return state.sceneReadiness[scenario]?.state ?? SceneReadinessState.ready;
+  }
+}
+
+class _ScenarioSelectionCard extends StatelessWidget {
+  const _ScenarioSelectionCard({
+    required this.title,
+    required this.snapshot,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final String title;
+  final SceneReadinessSnapshot? snapshot;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ThemedSelectionCard(
+      title: title,
+      semanticLabel: title,
+      selected: selected,
+      onPressed: onPressed,
+      trailing: _statusIconFor(snapshot),
+    );
   }
 }
 

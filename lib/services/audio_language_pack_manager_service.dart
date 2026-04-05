@@ -56,12 +56,16 @@ class AudioLanguagePackManagerService
 
   @override
   Future<String> ensureSelectedLocale(List<Locale> preferredLocales) async {
+    final availableLanguages = await _availableCatalog();
     final existing = await _appStateContract.getSelectedAudioLocaleTag();
-    if (existing != null && _isKnownLocale(existing)) {
+    if (existing != null && _isKnownLocale(existing, availableLanguages)) {
       return existing;
     }
 
-    final suggested = _resolveSuggestedLocale(preferredLocales);
+    final suggested = _resolveSuggestedLocale(
+      preferredLocales,
+      availableLanguages,
+    );
     await _appStateContract.setSelectedAudioLocaleTag(suggested);
     return suggested;
   }
@@ -73,7 +77,8 @@ class AudioLanguagePackManagerService
 
   @override
   Future<void> selectLocale(String localeTag) async {
-    if (!_isKnownLocale(localeTag)) {
+    final availableLanguages = await _availableCatalog();
+    if (!_isKnownLocale(localeTag, availableLanguages)) {
       throw ArgumentError.value(
         localeTag,
         'localeTag',
@@ -85,13 +90,14 @@ class AudioLanguagePackManagerService
 
   @override
   Future<List<AudioLanguageAvailability>> listAvailableLanguages() async {
+    final availableLanguages = await _availableCatalog();
     final selected = await _appStateContract.getSelectedAudioLocaleTag();
     final records = await _repository.getAllPacks();
     final byLocale = <String, AudioLanguagePackRecord>{
       for (final record in records) record.localeTag: record,
     };
 
-    return _catalog
+    return availableLanguages
         .map((language) {
           final status = language.isBundled
               ? AudioLanguagePackStatus.downloaded
@@ -241,29 +247,40 @@ class AudioLanguagePackManagerService
     );
   }
 
-  String _resolveSuggestedLocale(List<Locale> preferredLocales) {
+  String _resolveSuggestedLocale(
+    List<Locale> preferredLocales,
+    List<AudioLanguage> availableLanguages,
+  ) {
     for (final locale in preferredLocales) {
       final exactTag = _localeTag(locale);
-      if (_isKnownLocale(exactTag)) {
+      if (_isKnownLocale(exactTag, availableLanguages)) {
         return exactTag;
       }
-      if (locale.languageCode == 'zh') {
+      if (locale.languageCode == 'zh' &&
+          _isKnownLocale('zh', availableLanguages)) {
         return 'zh';
       }
+    }
+
+    if (_isKnownLocale('en', availableLanguages)) {
+      return 'en';
+    }
+    if (availableLanguages.isNotEmpty) {
+      return availableLanguages.first.localeTag;
     }
     return 'en';
   }
 
   List<String> _fallbackChain(String localeTag) {
     final chain = <String>[];
-    if (_isKnownLocale(localeTag)) {
+    if (_isKnownLocale(localeTag, _catalog)) {
       chain.add(localeTag);
     }
 
     final dashIndex = localeTag.indexOf('-');
     if (dashIndex > 0) {
       final base = localeTag.substring(0, dashIndex);
-      if (!chain.contains(base) && _isKnownLocale(base)) {
+      if (!chain.contains(base) && _isKnownLocale(base, _catalog)) {
         chain.add(base);
       }
     }
@@ -279,8 +296,8 @@ class AudioLanguagePackManagerService
     return chain;
   }
 
-  bool _isKnownLocale(String localeTag) {
-    return _catalog.any((entry) => entry.localeTag == localeTag);
+  bool _isKnownLocale(String localeTag, List<AudioLanguage> languages) {
+    return languages.any((entry) => entry.localeTag == localeTag);
   }
 
   bool _isBundled(String localeTag) {
@@ -295,6 +312,30 @@ class AudioLanguagePackManagerService
       return '${locale.languageCode}-$countryCode';
     }
     return locale.languageCode;
+  }
+
+  Future<List<AudioLanguage>> _availableCatalog() async {
+    final available = <AudioLanguage>[];
+    for (final language in _catalog) {
+      if (!language.isBundled || await _hasBundledAssets(language.localeTag)) {
+        available.add(language);
+      }
+    }
+    return available;
+  }
+
+  Future<bool> _hasBundledAssets(String localeTag) async {
+    for (final descriptor in _contentResolverContract.listRequiredAudio()) {
+      final assetPath = _contentResolverContract.resolveBundledAudioAssetPath(
+        localeTag: localeTag,
+        scenario: descriptor.scenario,
+        stage: descriptor.stage,
+      );
+      if (await _assetAvailabilityChecker(assetPath)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<Map<String, Object?>> _loadManifest() async {

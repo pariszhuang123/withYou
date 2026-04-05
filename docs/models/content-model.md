@@ -5,13 +5,22 @@
 Defines how the three scenarios map to caller names, ringtone, and audio assets.
 v1 remains Chinese audio only with fixed caller identity per scenario.
 
+User-facing naming and emoji rules for these scenarios are defined separately in
+`docs/models/emoji-language-contract.md`.
+
 ## Scenarios
 
-| Enum Value | Chinese Label | English Label | Description | Caller Name | Required Audio Files |
-|------------|---------------|---------------|-------------|-------------|----------------------|
-| `presence` | 陪伴掩护 | Presence | One-call anchor for companionship or passive cover | `Xiao Chen` | `stage_1` |
-| `socialPull` | 柔性牵引 | Social Pull | Believable ongoing expectation without urgency | `Xiao Li` | `stage_1`, `stage_2`, `stage_3` |
-| `exitPressure` | 快速脱身 | Exit Pressure | Urgent but controlled reason to leave now | `Xiao Zhang` | `stage_1`, `stage_2`, `stage_3` |
+| Enum Value | User-Facing State | Existing Chinese Label | Existing English Label | Description | Caller Name | Required Audio Files |
+|------------|-------------------|------------------------|------------------------|-------------|-------------|----------------------|
+| `presence` | `👀 Stay with me` | `陪伴掩护` | `Presence` | One-call anchor for companionship or passive cover | `Xiao Chen` | `stage_1` |
+| `socialPull` | `🕒 Ease me out` | `柔性牵引` | `Social Pull` | Believable ongoing expectation without urgency | `Xiao Li` | `stage_1`, `stage_2`, `stage_3` |
+| `exitPressure` | `🚪 Get me out` | `快速脱身` | `Exit Pressure` | Urgent but controlled reason to leave now | `Xiao Zhang` | `stage_1`, `stage_2`, `stage_3` |
+
+Notes:
+
+- enum values are the source of truth for code and assets
+- user-facing labels should follow the emoji and language contract
+- legacy style-based labels are not valid user-facing replacements
 
 ## Caller Name Rules
 

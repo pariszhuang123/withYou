@@ -86,7 +86,6 @@ class AppRouterService implements AppRouterContract {
 
   late AppRouteState _currentRoute;
   AppRouteState _lastNonCallRoute = const AppRouteState.home();
-  bool _callRouteVisible = false;
   bool _routerAttached = false;
   bool _applyingPendingExternalIntent = false;
   AppLaunchIntent? _pendingExternalIntent;
@@ -147,34 +146,35 @@ class AppRouterService implements AppRouterContract {
     }
 
     if (visible) {
-      if (_callRouteVisible) {
-        return;
-      }
-
-      _callRouteVisible = true;
-      _currentRoute = AppRouteState(
+      final route = AppRouteState(
         destination: AppRouteDestination.call,
         scenario: scenario ?? intent?.scenario,
         stage: stage ?? intent?.stage,
         sessionId: sessionId ?? intent?.sessionId,
       );
-      final location = _callLocation(_currentRoute, intent);
+      final location = _callLocation(route, intent);
+      final currentLocation = _router.routeInformationProvider.value.uri
+          .toString();
+      if (currentLocation == location) {
+        _currentRoute = route;
+        return;
+      }
+
+      _currentRoute = route;
       final isExternal =
           intent?.source == AppLaunchSource.notification ||
           intent?.source == AppLaunchSource.homeScreenWidget;
       if (isExternal) {
         _router.go(location);
-        _callRouteVisible = false;
         _syncCurrentRouteFromRouter();
         return;
       }
       await _router.push(location);
-      _callRouteVisible = false;
       _syncCurrentRouteFromRouter();
       return;
     }
 
-    if (!_callRouteVisible) {
+    if (_currentRoute.destination != AppRouteDestination.call) {
       return;
     }
 
@@ -183,7 +183,6 @@ class AppRouterService implements AppRouterContract {
     } else {
       _router.go(_homePath);
     }
-    _callRouteVisible = false;
     _currentRoute = _lastNonCallRoute;
   }
 
